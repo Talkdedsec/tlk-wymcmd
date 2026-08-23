@@ -1,0 +1,256 @@
+{
+  "app": {
+    "name": "wymcmd",
+    "tagline": "CMD'm Neden Açıldı",
+    "subtitle": "Terminalini neyin açtığını gör."
+  },
+  "time": {
+    "ago": {
+      "seconds": "{0} sn önce",
+      "minute": {
+        "one": "{0} dakika önce",
+        "many": "{0} dakika önce"
+      },
+      "hour": {
+        "one": "{0} saat önce",
+        "many": "{0} saat önce"
+      },
+      "day": {
+        "one": "{0} gün önce",
+        "many": "{0} gün önce"
+      }
+    },
+    "duration": {
+      "ms": "{0} ms",
+      "sec": "{0} sn",
+      "min": "{0}dk {1}sn",
+      "hour": "{0}sa {1}dk"
+    }
+  },
+  "window": {
+    "unknown": "bilinmiyor",
+    "visible": "görünür pencere",
+    "hidden": "gizli / pencere yok",
+    "embedded": "gömülü terminal"
+  },
+  "confidence": {
+    "inferred": "çıkarım",
+    "high": "yüksek",
+    "certain": "kesin"
+  },
+  "signature": {
+    "unknown": "imza bilinmiyor",
+    "unsigned": "İMZASIZ",
+    "valid": "{0} tarafından imzalı",
+    "invalid": "GEÇERSİZ İMZA",
+    "expired": "süresi dolmuş sertifika"
+  },
+  "source": {
+    "unknown": "kaynak bilinmiyor",
+    "usershell": "sen başlattın",
+    "scheduledtask": "Zamanlanmış Görev",
+    "runkey": "Run kayıt anahtarı",
+    "startupfolder": "Başlangıç klasörü",
+    "service": "Windows servisi",
+    "wmisubscription": "WMI olay aboneliği",
+    "installer": "kurulum programı",
+    "officemacro": "Office belgesi",
+    "browserordownload": "tarayıcı veya indirilen dosya",
+    "imagefileexecutionoptions": "Image File Execution Options",
+    "activesetup": "Active Setup",
+    "logonscript": "oturum açma script'i",
+    "terminal": "terminal veya kabuk",
+    "developertool": "geliştirici aracı",
+    "systemcomponent": "Windows bileşeni",
+    "remoteaccess": "uzak oturum"
+  },
+  "risk": {
+    "unsigned": "imzasız dosya",
+    "hidden_window": "görünür pencere yok",
+    "temp_path": "geçici klasörden çalışıyor",
+    "encoded_command": "kodlanmış komut satırı",
+    "very_short_life": "açılır açılmaz kapandı",
+    "elevated": "yönetici olarak çalıştı",
+    "unknown_source": "başlatma kaynağı tespit edilemedi",
+    "network_tool": "indirme yapıyor veya ağa çıkıyor",
+    "lolbin": "sistemin kendi aracı kötüye kullanılabilir"
+  },
+  "verdict": {
+    "line": "{0} → {1}",
+    "chain_separator": " → ",
+    "started_by_task": "{0} zamanlanmış görevi çalıştırdı",
+    "started_by_runkey": "\"{0}\" Run kaydı oturum açılışında çalıştırdı",
+    "started_by_startup": "Başlangıç klasöründeki \"{0}\" kısayolu çalıştırdı",
+    "started_by_service": "{0} servisi çalıştırdı",
+    "started_by_wmi": "{0} WMI aboneliği çalıştırdı",
+    "started_by_user": "{0} üzerinden sen çalıştırdın",
+    "started_by_installer": "Bir kurulum programı ({0}) çalıştırdı",
+    "started_by_parent": "{0} çalıştırdı",
+    "unattributed": "Başlatma kaynağı tespit edilemedi"
+  },
+  "cli": {
+    "usage_header": "wymcmd - CMD'm Neden Açıldı",
+    "usage_line": "kullanım: wymcmd <komut> [seçenekler]",
+    "commands_header": "komutlar",
+    "options_header": "genel seçenekler",
+    "cmd": {
+      "why": "bir konsol açılışını açıkla (geçmişe dönük de çalışır)",
+      "timeline": "belirli bir anın etrafında olan her şey",
+      "list": "yakalanan açılışları listele",
+      "watch": "bu pencere açık kaldığı sürece canlı akış",
+      "trap": "belirli süre boyunca eşleşme bekle, sonra çık",
+      "tree": "canlı süreç ağacını göster",
+      "kill": "süreci sonlandır, istenirse tüm ağacıyla",
+      "rules": "otomatik kuralları yönet",
+      "blackbox": "yerleşik süreç gerektirmeyen açılış kaydı",
+      "sources": "Windows veri kaynaklarını aç veya incele",
+      "export": "yakalanan olayları dışa aktar",
+      "service": "nöbet servisini kur veya yönet",
+      "doctor": "neyin açık neyin eksik olduğunu kontrol et",
+      "uninstall": "wymcmd'nin sistemde bıraktığı her izi kaldır"
+    },
+    "opt": {
+      "lang": "çıktı dili (en, tr)",
+      "json": "İngilizce anahtarlarla makine-okunur çıktı",
+      "help": "bu yardımı göster",
+      "version": "sürümü göster"
+    },
+    "error": {
+      "unknown_command": "bilinmeyen komut: {0}",
+      "needs_admin": "bunun için yönetici hakkı gerekiyor",
+      "source_disabled": "gerekli veri kaynağı kapalı - çalıştır: wymcmd sources enable",
+      "not_found": "eşleşen bir kayıt yok",
+      "bad_argument": "{0} için geçersiz değer: {1}"
+    }
+  },
+  "doctor": {
+    "title": "wymcmd doctor",
+    "ok": "tamam",
+    "missing": "yok",
+    "degraded": "kısıtlı",
+    "admin": "yönetici hakkı",
+    "etw": "gerçek zamanlı ETW yakalama",
+    "blackbox": "kara kutu kaydedici (AutoLogger)",
+    "security_audit": "süreç oluşturma denetimi (4688)",
+    "cmdline_audit": "denetim olaylarında komut satırı",
+    "script_block": "PowerShell script bloğu kaydı",
+    "sysmon": "Sysmon",
+    "prefetch": "Prefetch",
+    "database": "olay veritabanı",
+    "hint_enable": "eksikleri açmak için: wymcmd sources enable"
+  },
+  "list": {
+    "count": "{0} olay"
+  },
+  "watch": {
+    "started": "izleniyor - tam yakalama, durdurmak için Ctrl+C",
+    "degraded": "kısıtlı modda izleniyor - kısa ömürlü süreçler kaçabilir (tam yakalama için yönetici olarak çalıştır)",
+    "stopped": "izleme durdu"
+  },
+  "kill": {
+    "done": "pid {0} sonlandırıldı ({1} süreç)",
+    "protected": "pid {0} korumalı bir sistem süreci - reddedildi",
+    "failed": "pid {0} sonlandırılamadı: {1}"
+  },
+  "why": {
+    "when": "başlangıç",
+    "lifetime": "ömür",
+    "exit_code": "çıkış kodu",
+    "image": "dosya",
+    "command": "komut",
+    "decoded": "çözülmüş",
+    "workdir": "çalışma dizini",
+    "signature": "imza",
+    "window": "pencere",
+    "user": "kullanıcı",
+    "source": "başlatan",
+    "confidence": "güven",
+    "evidence": "kanıt",
+    "chain": "üst zincir",
+    "risk": "risk"
+  },
+  "gui": {
+    "not_watching": "izleme kapalı - kayıtlı geçmiş gösteriliyor",
+    "start_watching": "İzlemeye başla",
+    "stop_watching": "İzlemeyi durdur",
+    "refresh": "Yenile",
+    "panic": "Panik",
+    "panic_done": "{0} konsol süreci sonlandırıldı",
+    "filter_console": "yalnız konsol",
+    "filter_hidden": "yalnız gizli",
+    "filter_unsigned": "yalnız imzasız",
+    "filter_risk": "en az risk",
+    "event_count": "{0} gösteriliyor / {1} kayıtlı",
+    "open_location": "Konumu aç",
+    "kill": "Öldür",
+    "kill_tree": "Ağacı öldür",
+    "sources_button": "Kaynaklar",
+    "sources_title": "Veri kaynakları",
+    "sources_hint": "Bu makinenin wymcmd'ye şu an neler söyleyebildiği. Buradaki hiçbir şey sen istemeden açılmaz.",
+    "enable_sources": "Eksik kaynakları aç",
+    "toggle_blackbox": "Kara kutu aç / kapat",
+    "toggle_service": "Nöbet servisi aç / kapat",
+    "remove_everything": "Her şeyi kaldır",
+    "action_done": "tamam",
+    "action_failed": "başarısız (çıkış kodu {0})",
+    "tray_show": "wymcmd'yi göster",
+    "tray_quit": "Çık",
+    "alert_title": "{0} başladı",
+    "empty_list": "Henüz kayıt yok. \"İzlemeye başla\" de ya da Kaynaklar'dan Windows'un senin için kaydetmesini aç.",
+    "empty_detail": "Soldan bir açılış seç: kimin, neden başlattığı burada görünür."
+  },
+  "timeline": {
+    "header": "{0} civarı zaman tüneli  (+/- {1})"
+  },
+  "chain": {
+    "exited": "kapanmış süreç"
+  },
+  "sources": {
+    "elevating": "yönetici hakkı isteniyor...",
+    "enabled": "{0}: açıldı",
+    "disabled": "{0}: geri alındı",
+    "already_on": "hepsi zaten açık",
+    "nothing_to_revert": "geri alınacak bir şey yok - wymcmd hiçbir ayarı değiştirmemiş",
+    "note_retroactive": "bundan sonra Windows süreç oluşturmayı komut satırıyla kaydeder; daha önceki açılışlar geri getirilemez"
+  },
+  "blackbox": {
+    "installed": "kara kutu kuruldu, {0} MB dairesel kayıt",
+    "removed": "kara kutu kaldırıldı",
+    "reboot_note": "kayıt bir sonraki açılışta başlar - yerleşik hiçbir wymcmd süreci kalmaz",
+    "no_process": "yerleşik süreç yok: bu kaydı Windows'un kendisi yazıyor",
+    "how_to_enable": "açmak için: wymcmd blackbox on"
+  },
+  "service": {
+    "installed": "nöbet servisi kuruldu",
+    "uninstalled": "nöbet servisi kaldırıldı",
+    "started": "nöbet servisi başlatıldı",
+    "stopped": "nöbet servisi durduruldu",
+    "not_installed": "nöbet servisi kurulu değil (varsayılan durum bu)",
+    "state": "nöbet servisi: {0}",
+    "failed": "servis komutu başarısız - loga bak"
+  },
+  "uninstall": {
+    "service": "nöbet servisi",
+    "data": "kayıtlı veriler",
+    "removed": "{0}: kaldırıldı",
+    "nothing": "kaldırılacak bir şey yok - bu makinede iz bırakılmamış",
+    "done": "wymcmd geride iz bırakmadı",
+    "data_locked": "veri klasörü hâlâ kullanımda: {0}"
+  },
+  "trap": {
+    "armed": "tuzak kuruldu: {0}  ·  süre {1}  ·  aksiyon: {2}",
+    "nothing": "tuzak süresi dolana kadar eşleşme olmadı",
+    "caught": "{0} eşleşme yakalandı"
+  },
+  "rules": {
+    "empty": "henüz kural yok",
+    "added": "kural {0} eklendi ({1})",
+    "removed": "kural {0} silindi",
+    "enabled": "kural {0} açıldı",
+    "disabled": "kural {0} kapatıldı",
+    "dry_run": "kayıtlı {0} açılışta eşleşecekti"
+  },
+  "export": {
+    "written": "{0} olay {1} dosyasına yazıldı"
+  }
+}
