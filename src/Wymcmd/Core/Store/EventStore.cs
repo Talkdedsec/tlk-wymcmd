@@ -107,6 +107,9 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         command.ExecuteNonQuery();
     }
 
+    /// <summary>A short-lived read connection for aggregate queries.</summary>
+    internal SqliteConnection OpenRead() => Open();
+
     private SqliteConnection Open()
     {
         var connection = new SqliteConnection(_connectionString);
@@ -298,6 +301,30 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         command.Parameters.AddWithValue("$pid", pid);
         command.Parameters.AddWithValue("$start", Stamp(startTime));
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// A console window shows up after the process does; this writes the late answer. The row
+    /// may still be sitting in the write queue, so give it a few tries before giving up.
+    /// </summary>
+    public async Task UpdateWindowAsync(int pid, DateTime startTime, WindowVisibility window, int risk)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            using var connection = Open();
+            using var command = connection.CreateCommand();
+            command.CommandText = """
+                UPDATE events SET window = $window, risk = $risk
+                WHERE pid = $pid AND start_time = $start
+                """;
+            command.Parameters.AddWithValue("$window", (int)window);
+            command.Parameters.AddWithValue("$risk", risk);
+            command.Parameters.AddWithValue("$pid", pid);
+            command.Parameters.AddWithValue("$start", Stamp(startTime));
+
+            if (command.ExecuteNonQuery() > 0) return;
+            await Task.Delay(250);
+        }
     }
 
     public int Prune(TimeSpan keepFor)

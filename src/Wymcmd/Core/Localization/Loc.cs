@@ -18,10 +18,13 @@ public static class Loc
     public static CultureInfo Culture { get; private set; } = CultureInfo.GetCultureInfo("en-US");
     public static event Action? Changed;
 
-    public static IReadOnlyList<(string Code, string Name)> Available { get; } =
+    // A record rather than a tuple: XAML binds to properties, and ValueTuple only has fields.
+    public sealed record LanguageOption(string Code, string Name);
+
+    public static IReadOnlyList<LanguageOption> Available { get; } =
     [
-        ("en", "English"),
-        ("tr", "Türkçe")
+        new("en", "English"),
+        new("tr", "Türkçe")
     ];
 
     static Loc()

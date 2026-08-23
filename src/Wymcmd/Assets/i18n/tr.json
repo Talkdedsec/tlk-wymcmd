@@ -137,7 +137,8 @@
     "sysmon": "Sysmon",
     "prefetch": "Prefetch",
     "database": "olay veritabanı",
-    "hint_enable": "eksikleri açmak için: wymcmd sources enable"
+    "hint_enable": "eksikleri açmak için: wymcmd sources enable",
+    "task_log": "Görev Zamanlayıcı işlem günlüğü"
   },
   "list": {
     "count": "{0} olay"
@@ -167,7 +168,8 @@
     "confidence": "güven",
     "evidence": "kanıt",
     "chain": "üst zincir",
-    "risk": "risk"
+    "risk": "risk",
+    "history": "çalışma geçmişi"
   },
   "gui": {
     "not_watching": "izleme kapalı - kayıtlı geçmiş gösteriliyor",
@@ -197,7 +199,9 @@
     "tray_quit": "Çık",
     "alert_title": "{0} başladı",
     "empty_list": "Henüz kayıt yok. \"İzlemeye başla\" de ya da Kaynaklar'dan Windows'un senin için kaydetmesini aç.",
-    "empty_detail": "Soldan bir açılış seç: kimin, neden başlattığı burada görünür."
+    "empty_detail": "Soldan bir açılış seç: kimin, neden başlattığı burada görünür.",
+    "watching_service": "nöbet servisi üzerinden izleniyor",
+    "stats_button": "İstatistik"
   },
   "timeline": {
     "header": "{0} civarı zaman tüneli  (+/- {1})"
@@ -252,5 +256,16 @@
   },
   "export": {
     "written": "{0} olay {1} dosyasına yazıldı"
+  },
+  "history": {
+    "run_count": "{0} kez çalışmış"
+  },
+  "stats": {
+    "title": "Desenler",
+    "summary": "Son {4} günde {0} açılış kaydedildi - {1} konsol, {2} penceresiz, {3} imzasız",
+    "launchers": "Burada işleri ne başlatıyor",
+    "images": "En çok başlatılan programlar",
+    "hours": "Saate göre dağılım",
+    "commands": "En çok tekrar eden konsol komutları"
   }
 }

@@ -32,6 +32,12 @@ public sealed class ProcessTree
 {
     private const int MaxChainDepth = 24;
 
+    /// <summary>
+    /// WMI reports creation times with one-second resolution, so a parent can look a hair
+    /// younger than its child. Anything inside this window is still treated as the real parent.
+    /// </summary>
+    private static readonly TimeSpan ClockSlack = TimeSpan.FromSeconds(2);
+
     private readonly ConcurrentDictionary<int, List<ProcRecord>> _byPid = new();
     private readonly Lock _sync = new();
 
@@ -87,7 +93,7 @@ public sealed class ProcessTree
 
             // Nothing covers that moment - fall back to the newest record that started before it.
             for (var i = list.Count - 1; i >= 0; i--)
-                if (list[i].StartTime <= at) return list[i];
+                if (list[i].StartTime <= at + ClockSlack) return list[i];
 
             return null;
         }
@@ -106,7 +112,7 @@ public sealed class ProcessTree
 
             // The parent must predate the child, otherwise the pid was recycled.
             var parent = Resolve(parentPid, current.StartTime);
-            if (parent is null || parent.StartTime > current.StartTime)
+            if (parent is null || parent.StartTime > current.StartTime + ClockSlack)
             {
                 chain.Add(new AncestorLink
                 {

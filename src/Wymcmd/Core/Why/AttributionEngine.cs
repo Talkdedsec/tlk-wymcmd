@@ -65,6 +65,19 @@ public sealed class AttributionEngine(AutostartIndex index)
         var parentName = parent?.ImageName ?? evt.ParentImageName;
         if (string.IsNullOrEmpty(parentName)) return null;
 
+        // The scheduler names the task and the pid it started, which beats every heuristic below.
+        if (TaskLaunchIndex.Find(evt.Pid, evt.ParentPid, evt.StartTime) is { } launch)
+        {
+            return new LaunchSource
+            {
+                Kind = LaunchSourceKind.ScheduledTask,
+                Name = launch.TaskPath,
+                Location = "Task Scheduler",
+                Confidence = Confidence.Certain,
+                FoundVia = EvidenceSource.TaskLog
+            };
+        }
+
         if (parentName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
         {
             var host = parent?.CommandLine ?? "";

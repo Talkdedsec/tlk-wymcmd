@@ -137,7 +137,8 @@
     "sysmon": "Sysmon",
     "prefetch": "Prefetch",
     "database": "event database",
-    "hint_enable": "run \"wymcmd sources enable\" to turn on what is missing"
+    "hint_enable": "run \"wymcmd sources enable\" to turn on what is missing",
+    "task_log": "Task Scheduler operational log"
   },
   "list": {
     "count": "{0} events"
@@ -167,7 +168,8 @@
     "confidence": "confidence",
     "evidence": "evidence",
     "chain": "ancestry",
-    "risk": "risk"
+    "risk": "risk",
+    "history": "execution history"
   },
   "gui": {
     "not_watching": "not watching - showing recorded history",
@@ -197,7 +199,9 @@
     "tray_quit": "Quit",
     "alert_title": "{0} started",
     "empty_list": "Nothing recorded yet. Press \"Start watching\", or open Sources to let Windows record for you.",
-    "empty_detail": "Pick a launch on the left to see who started it and why."
+    "empty_detail": "Pick a launch on the left to see who started it and why.",
+    "watching_service": "watching through the watchdog service",
+    "stats_button": "Stats"
   },
   "timeline": {
     "header": "timeline around {0}  (+/- {1})"
@@ -252,5 +256,16 @@
   },
   "export": {
     "written": "{0} events written to {1}"
+  },
+  "history": {
+    "run_count": "{0} runs"
+  },
+  "stats": {
+    "title": "Patterns",
+    "summary": "{0} launches recorded - {1} consoles, {2} without a window, {3} unsigned - over the last {4} days",
+    "launchers": "What starts things here",
+    "images": "Most started programs",
+    "hours": "By hour of day",
+    "commands": "Most repeated console command lines"
   }
 }

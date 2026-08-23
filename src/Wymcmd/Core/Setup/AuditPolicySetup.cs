@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Text.Json;
 using Microsoft.Win32;
 using Wymcmd.Core.Diagnostics;
@@ -25,6 +26,7 @@ public static class AuditPolicySetup
         public bool EnabledProcessAudit { get; set; }
         public bool EnabledCommandLine { get; set; }
         public bool EnabledScriptBlock { get; set; }
+        public bool EnabledTaskLog { get; set; }
         public DateTime? ChangedAt { get; set; }
     }
 
@@ -73,6 +75,12 @@ public static class AuditPolicySetup
             changed.Add("script_block");
         }
 
+        if (SetEventLog(SourceInspector.TaskLogName, true))
+        {
+            journal.EnabledTaskLog = true;
+            changed.Add("task_log");
+        }
+
         WriteJournal(journal);
         return changed;
     }
@@ -91,6 +99,9 @@ public static class AuditPolicySetup
 
         if (journal.EnabledScriptBlock && SetDword(Registry.LocalMachine, ScriptBlockKey, "EnableScriptBlockLogging", 0))
             reverted.Add("script_block");
+
+        if (journal.EnabledTaskLog && SetEventLog(SourceInspector.TaskLogName, false))
+            reverted.Add("task_log");
 
         if (File.Exists(JournalPath)) File.Delete(JournalPath);
         return reverted;
@@ -125,6 +136,24 @@ public static class AuditPolicySetup
         catch (Exception ex)
         {
             Log.Error("auditpol could not be started", ex);
+            return false;
+        }
+    }
+
+    private static bool SetEventLog(string logName, bool enabled)
+    {
+        try
+        {
+            var configuration = new EventLogConfiguration(logName);
+            if (configuration.IsEnabled == enabled) return false;
+
+            configuration.IsEnabled = enabled;
+            configuration.SaveChanges();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"could not change the {logName} log: {ex.Message}");
             return false;
         }
     }

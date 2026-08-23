@@ -41,7 +41,7 @@ and only the last one is a resident process - it ships **disabled**.
 
 | Mode | Resident process | What you get |
 |---|---|---|
-| **Forensic** (default) | none | Rebuilds history from what Windows already recorded: Security log 4688, Sysmon, Task Scheduler, PowerShell script blocks, Prefetch, BAM, AmCache |
+| **Forensic** (default) | none | Rebuilds history from what Windows already recorded: Security log 4688/4689, Sysmon, Task Scheduler, PowerShell script blocks, Prefetch, BAM and UserAssist |
 | **Black box** (recommended) | **none** | An ETW AutoLogger that *Windows itself* starts at boot and writes to a capped circular file. Zero CPU cost while idle, nothing of ours in memory, full fidelity when you open the tool later |
 | **Live** | only while open | Real-time kernel tracing while `wymcmd watch` or the window is open |
 | **Trap** | until it expires | "Catch it if it happens again", with a deadline, then it closes itself |

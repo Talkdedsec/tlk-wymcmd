@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.ServiceProcess;
 using Wymcmd.Core.Capture;
 using Wymcmd.Core.Diagnostics;
+using Wymcmd.Core.Ipc;
 using Wymcmd.Core.Rules;
 using Wymcmd.Core.Store;
 using Wymcmd.Core.Tree;
@@ -20,6 +21,7 @@ public sealed class WatchdogService : ServiceBase
 
     private EventStore? _store;
     private CaptureEngine? _engine;
+    private PipeServer? _feed;
 
     public WatchdogService() => ServiceName = ServiceName_;
 
@@ -37,6 +39,10 @@ public sealed class WatchdogService : ServiceBase
         {
             EnforceRules = true
         };
+        _feed = new PipeServer();
+        _feed.Start();
+        _engine.Observed += evt => _feed.Broadcast(evt);
+
         _engine.Start();
 
         Log.Info("watchdog service started");
@@ -47,6 +53,7 @@ public sealed class WatchdogService : ServiceBase
         Log.Info("watchdog service stopping");
         _engine?.Stop();
         _engine?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _feed?.Dispose();
         _store?.Dispose();
     }
 

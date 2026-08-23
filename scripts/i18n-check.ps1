@@ -1,11 +1,17 @@
 # Fails the build when English and Turkish drift apart, or when code asks for a key nobody wrote.
 [CmdletBinding()]
 param(
-    [string]$ProjectRoot = (Join-Path $PSScriptRoot '..\src\Wymcmd')
+    [string]$ProjectRoot
 )
 
 $ErrorActionPreference = 'Stop'
 $problems = @()
+
+if (-not $ProjectRoot) {
+    $here = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+    if (-not $here) { $here = (Get-Location).Path }
+    $ProjectRoot = Join-Path $here '..\src\Wymcmd'
+}
 
 function Get-FlatKeys {
     param([Parameter(Mandatory)][string]$Path)
