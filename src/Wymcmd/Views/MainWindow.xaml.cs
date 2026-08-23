@@ -26,4 +26,7 @@ public partial class MainWindow : Window
 
     private void OnSourcesClick(object sender, RoutedEventArgs e)
         => new SourcesWindow { Owner = this }.ShowDialog();
+
+    private void OnStatsClick(object sender, RoutedEventArgs e)
+        => new StatsWindow(_model.Store) { Owner = this }.ShowDialog();
 }

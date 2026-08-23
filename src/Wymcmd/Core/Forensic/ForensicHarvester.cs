@@ -43,6 +43,7 @@ public sealed class ForensicHarvester(EventStore? store = null)
         var exits = EvtxReader.ProcessExits(from, to, limit);
         var tasks = EvtxReader.TaskLaunches(from - TimeSpan.FromMinutes(5), to, 1000);
         var scripts = EvtxReader.ScriptBlocks(from, to, 1000);
+        var launchedByUser = ExecutionHistory.UserLaunched();
 
         var results = merged.Values.OrderBy(e => e.StartTime).ToList();
         var byPid = results.GroupBy(e => e.Pid).ToDictionary(g => g.Key, g => g.ToList());
@@ -67,6 +68,9 @@ public sealed class ForensicHarvester(EventStore? store = null)
 
             if (evt.Source is null)
                 new AttributionEngine(_autostart).Attribute(evt);
+
+            if (evt.Source is null or { Kind: LaunchSourceKind.Unknown })
+                AttachUserLaunch(evt, launchedByUser);
 
             // Nothing recorded whether a window appeared, so this stays an inference.
             if (evt.Window == WindowVisibility.Unknown && decoded.Traits.HasFlag(CommandTraits.HiddenWindow))
@@ -156,6 +160,29 @@ public sealed class ForensicHarvester(EventStore? store = null)
 
             current = parent;
         }
+    }
+
+    /// <summary>
+    /// UserAssist only proves a human launched this binary from the shell at some point, so it
+    /// is the weakest attribution we accept - and it is marked as such.
+    /// </summary>
+    private static void AttachUserLaunch(ProcEvent evt, IReadOnlyList<ExecutionTrace> launchedByUser)
+    {
+        var hit = launchedByUser.FirstOrDefault(trace =>
+            (trace.ImagePath is not null && trace.ImagePath.Equals(evt.ImagePath, StringComparison.OrdinalIgnoreCase)) ||
+            trace.ImageName.Equals(evt.ImageName, StringComparison.OrdinalIgnoreCase));
+
+        if (hit is null) return;
+
+        evt.Source = new LaunchSource
+        {
+            Kind = LaunchSourceKind.UserShell,
+            Name = hit.ImageName,
+            Location = "UserAssist",
+            Confidence = Confidence.Inferred,
+            FoundVia = EvidenceSource.UserAssist
+        };
+        evt.Sources |= EvidenceSource.UserAssist;
     }
 
     private static void AttachTask(ProcEvent evt, IReadOnlyList<TaskLaunch> tasks)

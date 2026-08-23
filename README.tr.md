@@ -41,7 +41,7 @@ var; yalnızca sonuncusu yerleşik bir süreç ve o da **kapalı geliyor**.
 
 | Mod | Yerleşik süreç | Ne veriyor |
 |---|---|---|
-| **Adli** (varsayılan) | yok | Windows'un zaten tuttuğu kayıtlardan geçmişi geri kurar: Güvenlik günlüğü 4688, Sysmon, Görev Zamanlayıcı, PowerShell script blokları, Prefetch, BAM, AmCache |
+| **Adli** (varsayılan) | yok | Windows'un zaten tuttuğu kayıtlardan geçmişi geri kurar: Güvenlik günlüğü 4688/4689, Sysmon, Görev Zamanlayıcı, PowerShell script blokları, Prefetch, BAM ve UserAssist |
 | **Kara kutu** (önerilen) | **yok** | Açılışta **Windows'un kendisinin** başlattığı bir ETW AutoLogger, tavanı belli dairesel dosyaya yazar. Boştayken CPU maliyeti sıfır, bellekte bize ait hiçbir şey yok, sonra aracı açtığında tam kayıt hazır |
 | **Canlı** | yalnızca açıkken | `wymcmd watch` ya da pencere açıkken gerçek zamanlı çekirdek izleme |
 | **Tuzak** | süresi dolana kadar | "Bir daha olursa yakala", süreli; süre bitince kendini kapatır |

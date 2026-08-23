@@ -29,6 +29,7 @@ public static class SourceInspector
         SecurityAudit(),
         CommandLineAudit(),
         ScriptBlockLogging(),
+        TaskLog(),
         Sysmon(),
         Prefetch(),
         Database()
@@ -100,6 +101,25 @@ public static class SourceInspector
         var enabled = key?.GetValue("EnableScriptBlockLogging") is int value && value == 1;
         return new SourceStatus("script_block", enabled ? SourceState.Ok : SourceState.Missing);
     }
+
+    /// <summary>
+    /// The Task Scheduler operational log ships disabled on Windows 10 and 11, and it is the
+    /// only source that names the task behind a launch when svchost will not talk to us.
+    /// </summary>
+    public static SourceStatus TaskLog()
+    {
+        try
+        {
+            var configuration = new EventLogConfiguration(TaskLogName);
+            return new SourceStatus("task_log", configuration.IsEnabled ? SourceState.Ok : SourceState.Missing);
+        }
+        catch (Exception)
+        {
+            return new SourceStatus("task_log", SourceState.Missing);
+        }
+    }
+
+    public const string TaskLogName = "Microsoft-Windows-TaskScheduler/Operational";
 
     private static SourceStatus Sysmon()
     {

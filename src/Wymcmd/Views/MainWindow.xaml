@@ -42,8 +42,9 @@
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <ComboBox Width="104" ItemsSource="{Binding Languages}"
-                              DisplayMemberPath="Name" SelectedValuePath="Code"
-                              SelectedValue="{Binding Language, Mode=TwoWay}" />
+                              DisplayMemberPath="Name"
+                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" />
+                    <Button Content="{loc:T gui.stats_button}" Click="OnStatsClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.sources_button}" Click="OnSourcesClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.refresh}" Command="{Binding RefreshCommand}" Margin="8,0,0,0" />
                     <Button Content="{Binding Watching, Converter={StaticResource WatchText}}"

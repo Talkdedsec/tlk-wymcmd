@@ -79,9 +79,14 @@ public sealed class ProcEvent
 
     public bool IsConsoleHost => ConsoleImages.Contains(ImageName);
 
+    /// <summary>
+    /// Shells and script engines - the things a person means by "a console opened".
+    /// conhost.exe and OpenConsole.exe are deliberately absent: they are the window host for
+    /// these processes, so listing them would double every single event.
+    /// </summary>
     public static readonly HashSet<string> ConsoleImages = new(StringComparer.OrdinalIgnoreCase)
     {
-        "cmd.exe", "powershell.exe", "pwsh.exe", "wt.exe", "conhost.exe", "openconsole.exe",
+        "cmd.exe", "powershell.exe", "pwsh.exe", "wt.exe",
         "wscript.exe", "cscript.exe", "mshta.exe", "bash.exe", "wsl.exe", "sh.exe"
     };
 }

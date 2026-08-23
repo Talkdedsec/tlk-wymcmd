@@ -44,7 +44,27 @@ public static class WhyCommand
         }
 
         EventFormatter.Detail(evt);
+        PrintHistory(evt);
         return CommandRouter.ExitOk;
+    }
+
+    /// <summary>Does this binary have a past on this machine, or did it show up today?</summary>
+    private static void PrintHistory(ProcEvent evt)
+    {
+        var traces = ExecutionHistory.For(evt.ImageName, evt.ImagePath.Length > 0 ? evt.ImagePath : null);
+        if (traces.Count == 0) return;
+
+        ConsoleHost.Line();
+        ConsoleHost.Strong(Loc.T("why.history"));
+
+        foreach (var trace in traces.Take(4))
+        {
+            var when = trace.LastRun is { } stamp
+                ? $"{stamp.ToString("g", Loc.Culture)}  ({Loc.Ago(stamp)})"
+                : "-";
+            var count = trace.RunCount is { } runs ? "  " + Loc.T("history.run_count", runs) : "";
+            ConsoleHost.Line($"  {trace.Source,-12} {when}{count}");
+        }
     }
 
     /// <summary>

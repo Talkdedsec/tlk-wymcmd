@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Wymcmd.Core.Actions;
 using Wymcmd.Core.Capture;
 using Wymcmd.Core.Diagnostics;
+using Wymcmd.Core.Ipc;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Model;
 using Wymcmd.Core.Rules;
@@ -23,6 +24,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private readonly Queue<ProcEvent> _pending = new();
     private readonly DispatcherTimer _flush;
     private CaptureEngine? _engine;
+    private PipeClient? _feed;
 
     public MainViewModel()
     {
@@ -35,6 +37,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         LoadHistory();
     }
+
+    /// <summary>Shared with the statistics window so both read the same database handle.</summary>
+    public EventStore Store => _store;
 
     public ObservableCollection<ProcEvent> Events { get; } = [];
 
@@ -51,16 +56,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _statusText = "";
     [ObservableProperty] private string _captureText = "";
 
-    public IReadOnlyList<(string Code, string Name)> Languages => Loc.Available;
+    public IReadOnlyList<Loc.LanguageOption> Languages => Loc.Available;
 
-    public string Language
+    /// <summary>
+    /// Bound as SelectedItem rather than SelectedValue: WPF pushes a null selection through a
+    /// two-way SelectedValue binding during load, which would silently reset the language.
+    /// </summary>
+    public Loc.LanguageOption SelectedLanguage
     {
-        get => Loc.Language;
+        get => Loc.Available.FirstOrDefault(option => option.Code == Loc.Language) ?? Loc.Available[0];
         set
         {
-            if (value == Loc.Language) return;
-            Loc.Use(value);
-            OnPropertyChanged(nameof(Language));
+            if (value is null || value.Code == Loc.Language) return;
+
+            Loc.Use(value.Code);
+            OnPropertyChanged(nameof(SelectedLanguage));
             RefreshTexts();
         }
     }
@@ -89,7 +99,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         var admin = SourceInspector.IsAdministrator();
         CaptureText = Watching
-            ? (admin ? Loc.T("watch.started") : Loc.T("watch.degraded"))
+            ? (_feed is not null ? Loc.T("gui.watching_service") : admin ? Loc.T("watch.started") : Loc.T("watch.degraded"))
             : Loc.T("gui.not_watching");
         StatusText = Loc.T("gui.event_count", Events.Count, _store.CountAll());
     }
@@ -100,6 +110,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         if (Watching)
         {
             _engine?.Stop();
+            _feed?.Dispose();
+            _feed = null;
             Watching = false;
             RefreshTexts();
             return;
@@ -107,9 +119,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            _engine ??= new CaptureEngine(_store, _tree, new AttributionEngine(_autostart), RuleSet.Load(AppPaths.Rules));
-            _engine.Observed += OnObserved;
-            _engine.Start();
+            // If the watchdog service is already capturing, listen to it instead of opening
+            // a second kernel session that would compete for the same events.
+            if (PipeClient.ServiceIsListening())
+            {
+                _feed = new PipeClient();
+                _feed.Received += OnObserved;
+                _feed.Start();
+            }
+            else
+            {
+                _engine ??= new CaptureEngine(_store, _tree, new AttributionEngine(_autostart), RuleSet.Load(AppPaths.Rules));
+                _engine.Observed += OnObserved;
+                _engine.Start();
+            }
+
             Watching = true;
         }
         catch (Exception ex)
@@ -234,6 +258,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _flush.Stop();
+        _feed?.Dispose();
         _engine?.Stop();
         _engine?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         _store.Dispose();

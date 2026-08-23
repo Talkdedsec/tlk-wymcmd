@@ -187,7 +187,9 @@ public sealed class CaptureEngine : IAsyncDisposable
                 var decoded = CommandLineDecoder.Decode(evt.ImageName, evt.CommandLine);
                 RiskScorer.Score(evt, decoded.Traits);
             }
+
             Observed?.Invoke(evt);
+            await _store.UpdateWindowAsync(evt.Pid, evt.StartTime, evt.Window, evt.Risk);
         }
         catch (OperationCanceledException)
         {
