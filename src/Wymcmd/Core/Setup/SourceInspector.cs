@@ -1,0 +1,137 @@
+using System.Diagnostics.Eventing.Reader;
+using System.Security.Principal;
+using Microsoft.Win32;
+using Wymcmd.Core.Store;
+
+namespace Wymcmd.Core.Setup;
+
+public enum SourceState { Ok, Degraded, Missing }
+
+public sealed record SourceStatus(string Key, SourceState State, string? Detail = null);
+
+/// <summary>
+/// What this machine can currently tell us. Every capability the tool depends on is checked
+/// the same way the user would check it by hand, and nothing is enabled as a side effect.
+/// </summary>
+public static class SourceInspector
+{
+    public static bool IsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    public static IReadOnlyList<SourceStatus> Inspect() =>
+    [
+        Admin(),
+        Etw(),
+        BlackBox(),
+        SecurityAudit(),
+        CommandLineAudit(),
+        ScriptBlockLogging(),
+        Sysmon(),
+        Prefetch(),
+        Database()
+    ];
+
+    private static SourceStatus Admin()
+        => new("admin", IsAdministrator() ? SourceState.Ok : SourceState.Missing);
+
+    private static SourceStatus Etw()
+        => new("etw", IsAdministrator() ? SourceState.Ok : SourceState.Missing);
+
+    public static SourceStatus BlackBox()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(
+            $@"SYSTEM\CurrentControlSet\Control\WMI\Autologger\{AppPaths.BlackBoxSessionName}");
+
+        if (key is null) return new SourceStatus("blackbox", SourceState.Missing);
+
+        var enabled = key.GetValue("Start") is int start && start == 1;
+        var file = key.GetValue("LogFileName") as string;
+        var size = file is not null && File.Exists(file) ? new FileInfo(file).Length : 0;
+
+        return new SourceStatus(
+            "blackbox",
+            enabled ? SourceState.Ok : SourceState.Degraded,
+            size > 0 ? $"{size / (1024 * 1024)} MB" : null);
+    }
+
+    private static SourceStatus SecurityAudit()
+    {
+        try
+        {
+            var query = new EventLogQuery("Security", PathType.LogName, "*[System[EventID=4688]]")
+            {
+                ReverseDirection = true
+            };
+            using var reader = new EventLogReader(query);
+            using var record = reader.ReadEvent();
+
+            if (record is null) return new SourceStatus("security_audit", SourceState.Missing);
+
+            var age = DateTime.Now - (record.TimeCreated ?? DateTime.MinValue);
+            return new SourceStatus("security_audit",
+                age < TimeSpan.FromDays(2) ? SourceState.Ok : SourceState.Degraded,
+                record.TimeCreated?.ToString("g"));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return new SourceStatus("security_audit", SourceState.Degraded, "needs administrator");
+        }
+        catch (EventLogException)
+        {
+            return new SourceStatus("security_audit", SourceState.Missing);
+        }
+    }
+
+    private static SourceStatus CommandLineAudit()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit");
+        var enabled = key?.GetValue("ProcessCreationIncludeCmdLine_Enabled") is int value && value == 1;
+        return new SourceStatus("cmdline_audit", enabled ? SourceState.Ok : SourceState.Missing);
+    }
+
+    private static SourceStatus ScriptBlockLogging()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(
+            @"SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging");
+        var enabled = key?.GetValue("EnableScriptBlockLogging") is int value && value == 1;
+        return new SourceStatus("script_block", enabled ? SourceState.Ok : SourceState.Missing);
+    }
+
+    private static SourceStatus Sysmon()
+    {
+        foreach (var name in new[] { "Sysmon64", "Sysmon" })
+        {
+            using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{name}");
+            if (key is not null) return new SourceStatus("sysmon", SourceState.Ok, name);
+        }
+        return new SourceStatus("sysmon", SourceState.Missing);
+    }
+
+    private static SourceStatus Prefetch()
+    {
+        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch");
+        if (!Directory.Exists(folder)) return new SourceStatus("prefetch", SourceState.Missing);
+
+        try
+        {
+            var count = Directory.EnumerateFiles(folder, "*.pf").Take(1).Count();
+            return new SourceStatus("prefetch", count > 0 ? SourceState.Ok : SourceState.Degraded);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return new SourceStatus("prefetch", SourceState.Degraded, "needs administrator");
+        }
+    }
+
+    private static SourceStatus Database()
+    {
+        if (!File.Exists(AppPaths.Database)) return new SourceStatus("database", SourceState.Degraded, "empty");
+
+        var size = new FileInfo(AppPaths.Database).Length;
+        return new SourceStatus("database", SourceState.Ok, $"{size / 1024} KB");
+    }
+}

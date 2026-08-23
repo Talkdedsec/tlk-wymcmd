@@ -1,0 +1,31 @@
+wymcmd License
+Copyright (c) 2026 Talkdedsec. All rights reserved.
+
+The source code of this project is published so that anyone can read it, audit it and see
+exactly what the tool does on their machine. Publishing it does not place it in the public
+domain and does not make it open source.
+
+PERMITTED
+  You may download, build, install and use this software, in source or binary form,
+  on any computer you own or administer, free of charge, for personal or internal use.
+  You may read and study the source code.
+  You may report issues and quote short excerpts of the code when doing so.
+
+NOT PERMITTED without prior written permission from the copyright holder
+  Modifying, adapting, translating or otherwise creating derivative works.
+  Redistributing, republishing, mirroring, packaging or bundling the software or its source,
+  in original or modified form, including forks published for distribution.
+  Selling, renting, leasing, sublicensing or offering the software as part of any paid
+  product, service or bundle.
+  Removing, obscuring or replacing this notice, the project name, the branding or the
+  attribution in the software or its documentation.
+
+NO WARRANTY
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+  PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM,
+  DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+This tool changes system settings only when you explicitly ask it to, and it can revert
+every change it made (`wymcmd uninstall --purge`). You remain responsible for how you use it,
+including on machines you administer for others.

@@ -1,0 +1,256 @@
+{
+  "app": {
+    "name": "wymcmd",
+    "tagline": "Why My CMD Opened",
+    "subtitle": "See what launched your terminal."
+  },
+  "time": {
+    "ago": {
+      "seconds": "{0}s ago",
+      "minute": {
+        "one": "{0} minute ago",
+        "many": "{0} minutes ago"
+      },
+      "hour": {
+        "one": "{0} hour ago",
+        "many": "{0} hours ago"
+      },
+      "day": {
+        "one": "{0} day ago",
+        "many": "{0} days ago"
+      }
+    },
+    "duration": {
+      "ms": "{0} ms",
+      "sec": "{0} s",
+      "min": "{0}m {1}s",
+      "hour": "{0}h {1}m"
+    }
+  },
+  "window": {
+    "unknown": "unknown",
+    "visible": "visible window",
+    "hidden": "hidden / no window",
+    "embedded": "embedded terminal"
+  },
+  "confidence": {
+    "inferred": "inferred",
+    "high": "high",
+    "certain": "certain"
+  },
+  "signature": {
+    "unknown": "signature unknown",
+    "unsigned": "UNSIGNED",
+    "valid": "signed by {0}",
+    "invalid": "INVALID SIGNATURE",
+    "expired": "expired certificate"
+  },
+  "source": {
+    "unknown": "unknown source",
+    "usershell": "you launched it",
+    "scheduledtask": "Scheduled Task",
+    "runkey": "Run registry key",
+    "startupfolder": "Startup folder",
+    "service": "Windows service",
+    "wmisubscription": "WMI event subscription",
+    "installer": "installer",
+    "officemacro": "Office document",
+    "browserordownload": "browser or downloaded file",
+    "imagefileexecutionoptions": "Image File Execution Options",
+    "activesetup": "Active Setup",
+    "logonscript": "logon script",
+    "terminal": "terminal or shell",
+    "developertool": "developer tool",
+    "systemcomponent": "Windows component",
+    "remoteaccess": "remote session"
+  },
+  "risk": {
+    "unsigned": "unsigned binary",
+    "hidden_window": "no visible window",
+    "temp_path": "runs from a temporary folder",
+    "encoded_command": "encoded command line",
+    "very_short_life": "exited almost immediately",
+    "elevated": "ran elevated",
+    "unknown_source": "launch source could not be attributed",
+    "network_tool": "downloads or contacts the network",
+    "lolbin": "living-off-the-land binary"
+  },
+  "verdict": {
+    "line": "{0} → {1}",
+    "chain_separator": " → ",
+    "started_by_task": "Scheduled task {0} started it",
+    "started_by_runkey": "Run key entry \"{0}\" started it at logon",
+    "started_by_startup": "Startup folder shortcut \"{0}\" started it at logon",
+    "started_by_service": "Service {0} started it",
+    "started_by_wmi": "WMI subscription {0} started it",
+    "started_by_user": "You started it from {0}",
+    "started_by_installer": "An installer ({0}) started it",
+    "started_by_parent": "{0} started it",
+    "unattributed": "No launch source could be attributed"
+  },
+  "cli": {
+    "usage_header": "wymcmd - Why My CMD Opened",
+    "usage_line": "usage: wymcmd <command> [options]",
+    "commands_header": "commands",
+    "options_header": "global options",
+    "cmd": {
+      "why": "explain one console launch (works retroactively)",
+      "timeline": "everything that happened around a moment in time",
+      "list": "list captured launches",
+      "watch": "live stream while this window stays open",
+      "trap": "watch for a match for a limited time, then exit",
+      "tree": "show the live process tree",
+      "kill": "terminate a process, optionally its whole tree",
+      "rules": "manage automatic rules",
+      "blackbox": "boot-time recorder with no resident process",
+      "sources": "enable or inspect Windows data sources",
+      "export": "export captured events",
+      "service": "install or control the watchdog service",
+      "doctor": "check what is available and what is missing",
+      "uninstall": "remove every trace wymcmd left on this system"
+    },
+    "opt": {
+      "lang": "output language (en, tr)",
+      "json": "machine-readable output with English keys",
+      "help": "show this help",
+      "version": "show version"
+    },
+    "error": {
+      "unknown_command": "unknown command: {0}",
+      "needs_admin": "this needs administrator rights",
+      "source_disabled": "required data source is disabled - run: wymcmd sources enable",
+      "not_found": "nothing matched",
+      "bad_argument": "invalid value for {0}: {1}"
+    }
+  },
+  "doctor": {
+    "title": "wymcmd doctor",
+    "ok": "ok",
+    "missing": "missing",
+    "degraded": "degraded",
+    "admin": "administrator rights",
+    "etw": "real-time ETW capture",
+    "blackbox": "black box recorder (AutoLogger)",
+    "security_audit": "process creation auditing (4688)",
+    "cmdline_audit": "command line in audit events",
+    "script_block": "PowerShell script block logging",
+    "sysmon": "Sysmon",
+    "prefetch": "Prefetch",
+    "database": "event database",
+    "hint_enable": "run \"wymcmd sources enable\" to turn on what is missing"
+  },
+  "list": {
+    "count": "{0} events"
+  },
+  "watch": {
+    "started": "watching - full fidelity capture, press Ctrl+C to stop",
+    "degraded": "watching in degraded mode - short-lived processes can be missed (run as administrator for full capture)",
+    "stopped": "stopped watching"
+  },
+  "kill": {
+    "done": "pid {0} terminated ({1} process(es))",
+    "protected": "pid {0} is a protected system process - refused",
+    "failed": "could not terminate pid {0}: {1}"
+  },
+  "why": {
+    "when": "started",
+    "lifetime": "lifetime",
+    "exit_code": "exit code",
+    "image": "image",
+    "command": "command",
+    "decoded": "decoded",
+    "workdir": "working dir",
+    "signature": "signature",
+    "window": "window",
+    "user": "user",
+    "source": "launched by",
+    "confidence": "confidence",
+    "evidence": "evidence",
+    "chain": "ancestry",
+    "risk": "risk"
+  },
+  "gui": {
+    "not_watching": "not watching - showing recorded history",
+    "start_watching": "Start watching",
+    "stop_watching": "Stop watching",
+    "refresh": "Refresh",
+    "panic": "Panic",
+    "panic_done": "{0} console process(es) terminated",
+    "filter_console": "consoles only",
+    "filter_hidden": "hidden only",
+    "filter_unsigned": "unsigned only",
+    "filter_risk": "min risk",
+    "event_count": "{0} shown / {1} recorded",
+    "open_location": "Open location",
+    "kill": "Kill",
+    "kill_tree": "Kill tree",
+    "sources_button": "Sources",
+    "sources_title": "Data sources",
+    "sources_hint": "What this machine can currently tell wymcmd. Nothing here is turned on without you asking.",
+    "enable_sources": "Enable missing sources",
+    "toggle_blackbox": "Black box on / off",
+    "toggle_service": "Watchdog service on / off",
+    "remove_everything": "Remove everything",
+    "action_done": "done",
+    "action_failed": "failed (exit code {0})",
+    "tray_show": "Show wymcmd",
+    "tray_quit": "Quit",
+    "alert_title": "{0} started",
+    "empty_list": "Nothing recorded yet. Press \"Start watching\", or open Sources to let Windows record for you.",
+    "empty_detail": "Pick a launch on the left to see who started it and why."
+  },
+  "timeline": {
+    "header": "timeline around {0}  (+/- {1})"
+  },
+  "chain": {
+    "exited": "exited process"
+  },
+  "sources": {
+    "elevating": "asking for administrator rights...",
+    "enabled": "{0}: enabled",
+    "disabled": "{0}: reverted",
+    "already_on": "everything is already enabled",
+    "nothing_to_revert": "nothing to revert - wymcmd did not change anything",
+    "note_retroactive": "from now on Windows records process creation with command lines; earlier launches cannot be recovered"
+  },
+  "blackbox": {
+    "installed": "black box installed, {0} MB circular trace",
+    "removed": "black box removed",
+    "reboot_note": "starts recording at the next boot - no wymcmd process stays resident",
+    "no_process": "no resident process: Windows writes this trace itself",
+    "how_to_enable": "enable with: wymcmd blackbox on"
+  },
+  "service": {
+    "installed": "watchdog service installed",
+    "uninstalled": "watchdog service removed",
+    "started": "watchdog service started",
+    "stopped": "watchdog service stopped",
+    "not_installed": "watchdog service is not installed (this is the default)",
+    "state": "watchdog service: {0}",
+    "failed": "the service command failed - see the log"
+  },
+  "uninstall": {
+    "service": "watchdog service",
+    "data": "recorded data",
+    "removed": "{0}: removed",
+    "nothing": "nothing to remove - this machine is untouched",
+    "done": "wymcmd left no traces behind",
+    "data_locked": "data folder still in use: {0}"
+  },
+  "trap": {
+    "armed": "trap armed: {0}  ·  for {1}  ·  action: {2}",
+    "nothing": "nothing matched before the trap expired",
+    "caught": "{0} match(es) caught"
+  },
+  "rules": {
+    "empty": "no rules yet",
+    "added": "rule {0} added ({1})",
+    "removed": "rule {0} removed",
+    "enabled": "rule {0} enabled",
+    "disabled": "rule {0} disabled",
+    "dry_run": "would have matched {0} recorded launch(es)"
+  },
+  "export": {
+    "written": "{0} events written to {1}"
+  }
+}
