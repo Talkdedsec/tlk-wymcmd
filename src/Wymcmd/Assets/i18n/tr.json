@@ -231,7 +231,11 @@
     "removed": "kara kutu kaldırıldı",
     "reboot_note": "kayıt bir sonraki açılışta başlar - yerleşik hiçbir wymcmd süreci kalmaz",
     "no_process": "yerleşik süreç yok: bu kaydı Windows'un kendisi yazıyor",
-    "how_to_enable": "açmak için: wymcmd blackbox on"
+    "how_to_enable": "açmak için: wymcmd blackbox on",
+    "with_command_lines": "sistem izi - komut satırlarını da kaydeder",
+    "without_command_lines": "manifest izi - her açılışı kaydeder, komut satırı olmadan",
+    "empty": "kaydedicide o aralık için bir şey yok",
+    "read_summary": "izde {0} açılış var, {1} tanesinde komut satırı da var"
   },
   "service": {
     "installed": "nöbet servisi kuruldu",
