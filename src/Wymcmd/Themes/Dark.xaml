@@ -79,6 +79,18 @@
         </Setter>
     </Style>
 
+    <Style x:Key="LanguageButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Style.Triggers>
+            <Trigger Property="Tag" Value="True">
+                <Setter Property="Background" Value="{StaticResource Mint}" />
+                <Setter Property="Foreground" Value="#FF04120C" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="{StaticResource Mint}" />
         <Setter Property="Foreground" Value="#FF04120C" />

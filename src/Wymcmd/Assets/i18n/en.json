@@ -2,7 +2,8 @@
   "app": {
     "name": "wymcmd",
     "tagline": "Why My CMD Opened",
-    "subtitle": "See what launched your terminal."
+    "subtitle": "See what launched your terminal.",
+    "long_name": "Why My CMD Opened"
   },
   "time": {
     "ago": {

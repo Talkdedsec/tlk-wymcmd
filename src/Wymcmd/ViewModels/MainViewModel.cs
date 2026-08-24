@@ -62,6 +62,21 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     /// Bound as SelectedItem rather than SelectedValue: WPF pushes a null selection through a
     /// two-way SelectedValue binding during load, which would silently reset the language.
     /// </summary>
+    public bool EnglishActive => Loc.Language == "en";
+    public bool TurkishActive => Loc.Language == "tr";
+
+    [RelayCommand]
+    private void SetLanguage(string? code)
+    {
+        if (code is null || code == Loc.Language) return;
+
+        Loc.Use(code);
+        OnPropertyChanged(nameof(SelectedLanguage));
+        OnPropertyChanged(nameof(EnglishActive));
+        OnPropertyChanged(nameof(TurkishActive));
+        RefreshTexts();
+    }
+
     public Loc.LanguageOption SelectedLanguage
     {
         get => Loc.Available.FirstOrDefault(option => option.Code == Loc.Language) ?? Loc.Available[0];
@@ -91,6 +106,9 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             Events.Add(evt);
         }
+
+        // An empty detail pane next to a full list looks broken; show the newest launch.
+        Selected ??= Events.FirstOrDefault();
 
         RefreshTexts();
     }

@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using Wymcmd.Core.Diagnostics;
 using Wymcmd.Core.Model;
 using Wymcmd.Core.Store;
+using Wymcmd.Core.Windows;
 
 namespace Wymcmd.Core.Capture;
 
@@ -101,8 +102,8 @@ public sealed class EtwCollector : ICollector
             data.ProcessID,
             data.ParentID,
             StartKey(data.ProcessID, data.TimeStamp),
-            SafeName(data.ImageFileName),
-            data.ImageFileName ?? "",
+            PathNames.FileName(data.ImageFileName),
+            PathNames.Normalize(data.ImageFileName),
             data.CommandLine ?? "",
             (int)data.SessionID,
             data.TimeStamp,
@@ -115,13 +116,6 @@ public sealed class EtwCollector : ICollector
     /// <summary>Classic kernel events carry no start key, so pid plus start time stands in for one.</summary>
     private static ulong StartKey(int pid, DateTime startTime)
         => (uint)pid | ((ulong)startTime.Ticks << 32);
-
-    private static string SafeName(string? imageFileName)
-    {
-        if (string.IsNullOrEmpty(imageFileName)) return "";
-        var slash = imageFileName.LastIndexOfAny(['\\', '/']);
-        return slash >= 0 ? imageFileName[(slash + 1)..] : imageFileName;
-    }
 
     public static void DropStaleSession(string name)
     {

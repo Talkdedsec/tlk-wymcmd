@@ -21,9 +21,9 @@
     <!-- WinForms is here for the tray icon only; DPI stays declared in the manifest because WPF owns the UI. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <Product>wymcmd</Product>
+    <Product>Why My CMD Opened</Product>
     <Company>Talkdedsec</Company>
-    <Description>Why My CMD Opened - find out what launched that console window</Description>
+    <Description>Why My CMD Opened - find out what launched that console window (wymcmd)</Description>
     <Version>0.1.0</Version>
   </PropertyGroup>
 
