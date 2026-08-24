@@ -138,7 +138,13 @@
     "prefetch": "Prefetch",
     "database": "event database",
     "hint_enable": "run \"wymcmd sources enable\" to turn on what is missing",
-    "task_log": "Task Scheduler operational log"
+    "task_log": "Task Scheduler operational log",
+    "detail": {
+      "needs_admin": "needs administrator",
+      "no_events": "no events yet",
+      "installed": "installed",
+      "database": "{0} KB, {1} events, {2:g} - {3:g}"
+    }
   },
   "list": {
     "count": "{0} events"

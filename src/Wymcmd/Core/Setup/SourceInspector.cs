@@ -1,6 +1,7 @@
 using System.Diagnostics.Eventing.Reader;
 using System.Security.Principal;
 using Microsoft.Win32;
+using Wymcmd.Core.Localization;
 using Wymcmd.Core.Store;
 
 namespace Wymcmd.Core.Setup;
@@ -52,7 +53,7 @@ public static class SourceInspector
         {
             true => new SourceStatus("blackbox", SourceState.Ok, detail),
             false => new SourceStatus("blackbox", SourceState.Degraded, detail),
-            null => new SourceStatus("blackbox", SourceState.Ok, detail ?? "installed")
+            null => new SourceStatus("blackbox", SourceState.Ok, detail ?? Loc.T("doctor.detail.installed"))
         };
     }
 
@@ -76,7 +77,7 @@ public static class SourceInspector
         }
         catch (UnauthorizedAccessException)
         {
-            return new SourceStatus("security_audit", SourceState.Degraded, "needs administrator");
+            return new SourceStatus("security_audit", SourceState.Degraded, Loc.T("doctor.detail.needs_admin"));
         }
         catch (EventLogException)
         {
@@ -141,13 +142,13 @@ public static class SourceInspector
         }
         catch (UnauthorizedAccessException)
         {
-            return new SourceStatus("prefetch", SourceState.Degraded, "needs administrator");
+            return new SourceStatus("prefetch", SourceState.Degraded, Loc.T("doctor.detail.needs_admin"));
         }
     }
 
     private static SourceStatus Database()
     {
-        if (!File.Exists(AppPaths.Database)) return new SourceStatus("database", SourceState.Degraded, "empty");
+        if (!File.Exists(AppPaths.Database)) return new SourceStatus("database", SourceState.Degraded, Loc.T("doctor.detail.no_events"));
 
         var size = new FileInfo(AppPaths.Database).Length / 1024;
 
@@ -157,8 +158,8 @@ public static class SourceInspector
             var (count, oldest, newest) = store.Bounds();
 
             var detail = count == 0
-                ? $"{size} KB, no events"
-                : $"{size} KB, {count} events, {oldest:g} - {newest:g}";
+                ? $"{size} KB, {Loc.T("doctor.detail.no_events")}"
+                : Loc.T("doctor.detail.database", size, count, oldest, newest);
 
             return new SourceStatus("database", count == 0 ? SourceState.Degraded : SourceState.Ok, detail);
         }
