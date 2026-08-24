@@ -8,9 +8,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Platforms>x64</Platforms>
-    <PlatformTarget>x64</PlatformTarget>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <!-- The runtime identifier drives the platform; pass -r win-arm64 to build for ARM. -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
     <AssemblyName>wymcmd</AssemblyName>
     <RootNamespace>Wymcmd</RootNamespace>
     <StartupObject>Wymcmd.Program</StartupObject>
@@ -24,7 +23,7 @@
     <Product>Why My CMD Opened</Product>
     <Company>Talkdedsec</Company>
     <Description>Why My CMD Opened - find out what launched that console window (wymcmd)</Description>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

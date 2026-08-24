@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0
+
+- The black box records **command lines**: a second ETW session in system trace mode sits beside
+  the manifest one, and the reader merges them. Enabling it also starts both sessions right away
+  instead of waiting for the next boot. `wymcmd blackbox read` shows what the recorder holds.
+- **Retention**: 30 days and 256 MB by default, both in `settings.json`, applied in the background
+  when capture starts and on demand with `wymcmd prune`. Stored ancestor chains no longer keep
+  command lines, which were most of a row's weight.
+- **Prefetch is parsed** for real - run count and the last eight run times - and **AmCache** says
+  when a binary was first catalogued on this machine, with its SHA-1.
+- The window gained **rules**, a **timeline** and **export**; rules can be created from the
+  selected launch and show how often they would have matched.
+- **76 tests** and a build workflow that runs them. Writing them turned up `FlushAsync` throwing
+  on an unbounded channel, and the fix is in.
+- An **ARM64** build is produced, from the same source, untested on ARM hardware.
+
 ## 0.1.1
 
 - `wymcmd install` copies both executables to `%LOCALAPPDATA%\Programs\wymcmd`, adds that folder
