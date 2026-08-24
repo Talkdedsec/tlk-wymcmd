@@ -52,16 +52,27 @@ public static class Uninstall
             removed.Add(Loc.T("uninstall.service"));
         }
 
-        if (purge && Directory.Exists(AppPaths.Root))
+        if (purge)
         {
-            try
+            // Data can sit in two places: the shared folder, and a per-user fallback from any
+            // run that happened before the shared one existed.
+            var roots = new[]
             {
-                Directory.Delete(AppPaths.Root, recursive: true);
-                removed.Add(Loc.T("uninstall.data"));
-            }
-            catch (IOException ex)
+                AppPaths.Root,
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "wymcmd")
+            }.Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var root in roots.Where(Directory.Exists))
             {
-                ConsoleHost.Warn(Loc.T("uninstall.data_locked", ex.Message));
+                try
+                {
+                    Directory.Delete(root, recursive: true);
+                    removed.Add(Loc.T("uninstall.data") + " (" + root + ")");
+                }
+                catch (IOException ex)
+                {
+                    ConsoleHost.Warn(Loc.T("uninstall.data_locked", ex.Message));
+                }
             }
         }
 
