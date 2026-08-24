@@ -280,6 +280,22 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         return reader.Read() ? Read(reader) : null;
     }
 
+    /// <summary>Row count and the span the database actually covers.</summary>
+    public (long Count, DateTime? Oldest, DateTime? Newest) Bounds()
+    {
+        using var connection = Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*), MIN(start_time), MAX(start_time) FROM events";
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read()) return (0, null, null);
+
+        var count = reader.GetInt64(0);
+        if (count == 0) return (0, null, null);
+
+        return (count, Unstamp(reader.GetInt64(1)), Unstamp(reader.GetInt64(2)));
+    }
+
     public long CountAll()
     {
         using var connection = Open();

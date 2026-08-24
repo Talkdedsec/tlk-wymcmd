@@ -64,11 +64,14 @@ public static class BlackBox
         var enabled = BlackBoxInstaller.IsEnabled();
         var size = BlackBoxInstaller.TraceSizeBytes();
 
-        ConsoleHost.Line($"{Loc.T("doctor.blackbox")}: " + (enabled
-            ? ConsoleHost.Color(Loc.T("doctor.ok"), 92)
-            : installed
-                ? ConsoleHost.Color(Loc.T("doctor.degraded"), 93)
-                : ConsoleHost.Color(Loc.T("doctor.missing"), 91)));
+        var state = (installed, enabled) switch
+        {
+            (false, _) => ConsoleHost.Color(Loc.T("doctor.missing"), 91),
+            (true, false) => ConsoleHost.Color(Loc.T("doctor.degraded"), 93),
+            _ => ConsoleHost.Color(Loc.T("doctor.ok"), 92)
+        };
+
+        ConsoleHost.Line($"{Loc.T("doctor.blackbox")}: {state}");
 
         if (installed)
         {

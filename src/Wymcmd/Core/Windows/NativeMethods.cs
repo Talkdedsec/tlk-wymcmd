@@ -32,6 +32,8 @@ internal static class NativeMethods
     public const int STD_OUTPUT_HANDLE = -11;
     public const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
     public const uint ATTACH_PARENT_PROCESS = 0xFFFFFFFF;
+    public const int STD_ERROR_HANDLE = -12;
+    public const uint FILE_TYPE_CHAR = 0x0002;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct PROCESSENTRY32W
@@ -204,6 +206,13 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern IntPtr GetStdHandle(int nStdHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetStdHandle(int nStdHandle, IntPtr hHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint GetFileType(IntPtr hFile);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

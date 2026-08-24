@@ -54,6 +54,11 @@ public static class BlackBoxReader
                     Confidence = Confidence.Certain
                 };
                 evt.ImageName = Path.GetFileName(evt.ImagePath);
+
+                // Kernel-side entries with no image (the idle process and friends) carry nothing
+                // a person could act on, and an empty row in the list is worse than no row.
+                if (evt.ImageName.Length == 0) return;
+
                 results.Add(evt);
             };
 
@@ -74,6 +79,9 @@ public static class BlackBoxReader
     /// <summary>\Device\HarddiskVolume4\Windows\... is how the kernel spells C:\Windows\...</summary>
     private static string NormalizeDevicePath(string path)
     {
+        if (path.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase))
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), path[12..]);
+
         if (!path.StartsWith(@"\Device\", StringComparison.OrdinalIgnoreCase)) return path;
 
         var parts = path.Split('\\', 4);

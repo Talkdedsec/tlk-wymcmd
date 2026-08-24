@@ -18,3 +18,10 @@ First working version.
 - WPF interface, tray notifications and a CLI sharing one executable
 - English and Turkish throughout, including CLI output and reports
 - Setup that reverts itself: wymcmd uninstall --purge
+
+Verified on Windows 11 26200:
+- ETW capture: 500/500 and 300/300 short-lived cmd.exe launches recorded, command lines intact
+- Black box: 64 MB circular trace, no wymcmd process resident, events readable afterwards
+- Retroactive: a console started while nothing of ours ran was reconstructed with its full
+  command line and attributed, evidence "BlackBox, SecurityLog", confidence certain
+- WMI fallback records launches but misses short-lived ones, and says so out loud

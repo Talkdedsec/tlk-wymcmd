@@ -19,6 +19,7 @@ public sealed class EtwCollector : ICollector
     private Thread? _pump;
     private volatile bool _running;
     private int _restarts;
+    private int _seen;
 
     public EtwCollector(string? sessionName = null) => _sessionName = sessionName ?? AppPaths.LiveSessionName;
 
@@ -94,6 +95,8 @@ public sealed class EtwCollector : ICollector
     private void OnProcessStart(ProcessTraceData data)
     {
         // Callback runs on the ETW pump: copy the fields, hand off, get out.
+        if (++_seen % 250 == 0) Log.Info($"etw process starts seen: {_seen}");
+
         Started?.Invoke(new RawStart(
             data.ProcessID,
             data.ParentID,
