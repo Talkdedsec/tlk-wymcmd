@@ -180,7 +180,7 @@ dışa aktarılan raporlar dahil. `--lang tr` ya da penceredeki EN/TR anahtarı.
 
 ## Kurulum
 
-[Releases](https://github.com/Talkdedsec1/wymcmd/releases) sayfasından zip'i indir, aç, klasörü
+[Releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases) sayfasından zip'i indir, aç, klasörü
 `PATH`'e ekle. Kurulum yok, indirilecek runtime yok: çalıştırılabilir dosya kendi kendine yeter.
 
 Zip'in içinde birbirine ait iki dosya var:
@@ -196,7 +196,7 @@ Zip'in içinde birbirine ait iki dosya var:
 Visual Studio C++ build tools ister; yalnız pencereyi istiyorsan o adımı atlayabilirsin.
 
 ```console
-git clone https://github.com/Talkdedsec1/wymcmd
+git clone https://github.com/Talkdedsec1/tlk-wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher

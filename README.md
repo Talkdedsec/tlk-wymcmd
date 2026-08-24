@@ -184,7 +184,7 @@ text, error messages and exported reports. `--lang tr`, or the EN/TR switch in t
 
 ## Install
 
-Grab the zip from [releases](https://github.com/Talkdedsec1/wymcmd/releases), unpack it, and put
+Grab the zip from [releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases), unpack it, and put
 the folder on your `PATH`. Nothing to install, no runtime to fetch: the executable is
 self-contained.
 
@@ -202,7 +202,7 @@ ahead of time, which needs the Visual Studio C++ build tools; skip that step if 
 the window.
 
 ```console
-git clone https://github.com/Talkdedsec1/wymcmd
+git clone https://github.com/Talkdedsec1/tlk-wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher

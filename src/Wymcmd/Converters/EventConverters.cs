@@ -94,6 +94,25 @@ public sealed class NullToCollapsedConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public sealed class RiskFactorTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is string key ? Loc.T("risk." + key) : "";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>A parent that exited before we looked has a pid but no name of its own.</summary>
+public sealed class AncestorNameConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is string name && name.Length > 0 ? name : Loc.T("chain.exited");
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class EmptyToVisibleConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
