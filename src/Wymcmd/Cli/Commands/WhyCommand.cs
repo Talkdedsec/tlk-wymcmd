@@ -57,6 +57,15 @@ public static class WhyCommand
         ConsoleHost.Line();
         ConsoleHost.Strong(Loc.T("why.history"));
 
+        if (ExecutionHistory.FirstSeen(evt.ImagePath, evt.ImageName) is { } first)
+        {
+            if (first.FirstSeen is { } when)
+                ConsoleHost.Line($"  {"AmCache",-12} {Loc.T("history.first_seen", when.ToString("g", Loc.Culture), Loc.Ago(when))}");
+
+            if (first.Sha1 is { Length: > 0 } hash)
+                ConsoleHost.Dim($"  {"",-12} sha1 {hash.ToLowerInvariant()}");
+        }
+
         foreach (var trace in traces.Take(4))
         {
             var when = trace.LastRun is { } stamp

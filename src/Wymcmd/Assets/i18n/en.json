@@ -292,7 +292,8 @@
     "written": "{0} events written to {1}"
   },
   "history": {
-    "run_count": "{0} runs"
+    "run_count": "{0} runs",
+    "first_seen": "first seen on this machine {0}  ({1})"
   },
   "stats": {
     "title": "Patterns",

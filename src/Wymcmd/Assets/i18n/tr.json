@@ -292,7 +292,8 @@
     "written": "{0} olay {1} dosyasına yazıldı"
   },
   "history": {
-    "run_count": "{0} kez çalışmış"
+    "run_count": "{0} kez çalışmış",
+    "first_seen": "bu makinede ilk görülme {0}  ({1})"
   },
   "stats": {
     "title": "Desenler",

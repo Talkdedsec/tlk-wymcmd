@@ -21,9 +21,8 @@ public sealed record ExecutionTrace(
 public static class ExecutionHistory
 {
     /// <summary>
-    /// Prefetch, read from file metadata only. The .pf write time is when the program last ran;
-    /// the format itself is deliberately not parsed, because half-decoded fields would be worse
-    /// than an honest approximation.
+    /// Prefetch. The file itself is parsed for the run count and the last eight run times;
+    /// when a file cannot be parsed, its write time still says when the program last ran.
     /// </summary>
     public static IReadOnlyList<ExecutionTrace> Prefetch()
     {
@@ -32,15 +31,25 @@ public static class ExecutionHistory
 
         try
         {
-            return Directory.EnumerateFiles(folder, "*.pf")
-                .Select(file =>
+            var traces = new List<ExecutionTrace>();
+
+            foreach (var file in Directory.EnumerateFiles(folder, "*.pf"))
+            {
+                var parsed = PrefetchReader.Read(file);
+                if (parsed is not null)
                 {
-                    var name = Path.GetFileNameWithoutExtension(file);
-                    var dash = name.LastIndexOf('-');
-                    var image = dash > 0 ? name[..dash] : name;
-                    return new ExecutionTrace(image, null, File.GetLastWriteTime(file), null, EvidenceSource.Prefetch);
-                })
-                .ToList();
+                    traces.Add(new ExecutionTrace(parsed.ImageName, null, parsed.LastRun,
+                        parsed.RunCount > 0 ? parsed.RunCount : null, EvidenceSource.Prefetch));
+                    continue;
+                }
+
+                var name = Path.GetFileNameWithoutExtension(file);
+                var dash = name.LastIndexOf('-');
+                traces.Add(new ExecutionTrace(dash > 0 ? name[..dash] : name, null,
+                    File.GetLastWriteTime(file), null, EvidenceSource.Prefetch));
+            }
+
+            return traces;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
@@ -164,6 +173,10 @@ public static class ExecutionHistory
         }
     }
 
+    /// <summary>When this machine first catalogued the binary, from AmCache.</summary>
+    public static AmCacheEntry? FirstSeen(string imagePath, string imageName)
+        => AmCacheReader.Find(imagePath, imageName);
+
     /// <summary>Everything the ledgers know about one binary, newest first.</summary>
     public static IReadOnlyList<ExecutionTrace> For(string imageName, string? imagePath = null)
     {
@@ -172,10 +185,13 @@ public static class ExecutionHistory
         traces.AddRange(BackgroundActivity());
         traces.AddRange(UserLaunched());
 
+
         return traces
             .Where(trace => trace.ImageName.Equals(imageName, StringComparison.OrdinalIgnoreCase) ||
                             (imagePath is not null && trace.ImagePath is not null &&
                              trace.ImagePath.Equals(imagePath, StringComparison.OrdinalIgnoreCase)))
+            // A ledger row with neither a time nor a count says nothing worth a line.
+            .Where(trace => trace.LastRun is not null || trace.RunCount is > 0)
             .OrderByDescending(trace => trace.LastRun ?? DateTime.MinValue)
             .ToList();
     }
