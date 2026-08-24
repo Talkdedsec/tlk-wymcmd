@@ -210,7 +210,25 @@
     "empty_list": "Nothing recorded yet. Press \"Start watching\", or open Sources to let Windows record for you.",
     "empty_detail": "Pick a launch on the left to see who started it and why.",
     "watching_service": "watching through the watchdog service",
-    "stats_button": "Stats"
+    "stats_button": "Stats",
+    "rules_button": "Rules",
+    "rules_title": "Rules",
+    "rules_hint": "Rules run in live, trap and watchdog mode only. Each row shows how often it would have matched over the last week of recorded history.",
+    "rule_from_selection": "New rule from the selected launch",
+    "rule_save": "Save",
+    "rule_reload": "Reload",
+    "rule_remove": "Delete",
+    "export": "Export",
+    "export_done": "{0} events written to {1}",
+    "export_empty": "nothing to export with the current filter",
+    "timeline_button": "Timeline",
+    "timeline_title": "What happened around a moment",
+    "timeline_hint": "Reads every source on this machine for that minute: the recorder, the Security log, Sysmon, Task Scheduler and PowerShell logging.",
+    "timeline_hint_limited": "Running without administrator: the recorder and the local database are read, but the Windows event logs are not available.",
+    "timeline_moment": "moment",
+    "timeline_radius": "radius",
+    "timeline_show": "Show",
+    "timeline_working": "reading every source..."
   },
   "timeline": {
     "header": "timeline around {0}  (+/- {1})"
@@ -266,7 +284,9 @@
     "removed": "rule {0} removed",
     "enabled": "rule {0} enabled",
     "disabled": "rule {0} disabled",
-    "dry_run": "would have matched {0} recorded launch(es)"
+    "dry_run": "would have matched {0} recorded launch(es)",
+    "matches_everything": "matches everything",
+    "seed_from": "prefilled from {0}"
   },
   "export": {
     "written": "{0} events written to {1}"

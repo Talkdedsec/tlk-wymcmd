@@ -30,9 +30,9 @@ public static class Export
 
         var content = format switch
         {
-            "csv" => Csv(events),
+            "csv" => Exporter.Csv(events),
             "report" or "md" or "markdown" => Report(events),
-            _ => string.Join(Environment.NewLine, events.Select(EventFormatter.Json))
+            _ => string.Join(Environment.NewLine, events.Select(Exporter.Json))
         };
 
         var target = options.Value("--out") ?? DefaultPath(format);
@@ -53,39 +53,6 @@ public static class Export
         };
         return Path.Combine(AppPaths.ExportDirectory, $"wymcmd-{DateTime.Now:yyyyMMdd-HHmmss}.{extension}");
     }
-
-    private static string Csv(IEnumerable<ProcEvent> events)
-    {
-        var text = new StringBuilder();
-        text.AppendLine("start_time,pid,parent_pid,image,command_line,window,signature,publisher,source_kind,source_name,risk,confidence,evidence");
-
-        foreach (var evt in events)
-        {
-            text.AppendLine(string.Join(",", new[]
-            {
-                evt.StartTime.ToString("o"),
-                evt.Pid.ToString(),
-                evt.ParentPid.ToString(),
-                evt.ImagePath.Length > 0 ? evt.ImagePath : evt.ImageName,
-                evt.CommandLine,
-                evt.Window.ToString(),
-                evt.Signature.Status.ToString(),
-                evt.Signature.Publisher ?? "",
-                (evt.Source?.Kind ?? LaunchSourceKind.Unknown).ToString(),
-                evt.Source?.Name ?? "",
-                evt.Risk.ToString(),
-                evt.Confidence.ToString(),
-                evt.Sources.ToString()
-            }.Select(Quote)));
-        }
-
-        return text.ToString();
-    }
-
-    private static string Quote(string value)
-        => value.Contains(',') || value.Contains('"') || value.Contains('\n')
-            ? "\"" + value.Replace("\"", "\"\"") + "\""
-            : value;
 
     private static string Report(IReadOnlyList<ProcEvent> events)
         => string.Join(Environment.NewLine + Environment.NewLine,

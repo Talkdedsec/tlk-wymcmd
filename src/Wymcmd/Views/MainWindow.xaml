@@ -58,6 +58,8 @@
                                     Style="{StaticResource LanguageButton}" Tag="{Binding TurkishActive}" />
                         </StackPanel>
                     </Border>
+                    <Button Content="{loc:T gui.timeline_button}" Click="OnTimelineClick" Margin="8,0,0,0" />
+                    <Button Content="{loc:T gui.rules_button}" Click="OnRulesClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.stats_button}" Click="OnStatsClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.sources_button}" Click="OnSourcesClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.refresh}" Command="{Binding RefreshCommand}" Margin="8,0,0,0" />
@@ -215,7 +217,8 @@
                     <TextBlock Text="{Binding StatusText}" Style="{StaticResource Label}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="{loc:T gui.open_location}" Command="{Binding OpenLocationCommand}" />
+                    <Button Content="{loc:T gui.export}" Click="OnExportClick" />
+                    <Button Content="{loc:T gui.open_location}" Command="{Binding OpenLocationCommand}" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.kill}" Command="{Binding KillSelectedCommand}" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.kill_tree}" Command="{Binding KillTreeSelectedCommand}" Margin="8,0,0,0" />
                 </StackPanel>
