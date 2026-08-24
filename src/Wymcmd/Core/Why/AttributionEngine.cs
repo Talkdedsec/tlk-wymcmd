@@ -24,7 +24,8 @@ public sealed class AttributionEngine(AutostartIndex index)
     private static readonly HashSet<string> DeveloperTools = new(StringComparer.OrdinalIgnoreCase)
     {
         "code.exe", "devenv.exe", "rider64.exe", "idea64.exe", "webstorm64.exe", "pycharm64.exe",
-        "sublime_text.exe", "node.exe", "npm.cmd", "git.exe", "dotnet.exe", "msbuild.exe", "claude.exe"
+        "sublime_text.exe", "node.exe", "npm.cmd", "git.exe", "dotnet.exe", "msbuild.exe",
+        "python.exe", "cargo.exe", "go.exe", "java.exe", "gradle.bat"
     };
 
     private static readonly HashSet<string> OfficeApps = new(StringComparer.OrdinalIgnoreCase)
