@@ -28,6 +28,7 @@ public sealed class CaptureEngine : IAsyncDisposable
     private readonly CancellationTokenSource _shutdown = new();
     private Task? _worker;
     private ICollector? _collector;
+    private int _enriched;
 
     public CaptureEngine(EventStore store, ProcessTree tree, AttributionEngine attribution, RuleSet? rules = null)
     {
@@ -97,6 +98,7 @@ public sealed class CaptureEngine : IAsyncDisposable
                 if (EnforceRules) Apply(evt);
 
                 _store.Enqueue(evt);
+                if (++_enriched % 250 == 0) Log.Info($"events enriched and queued: {_enriched}");
                 Observed?.Invoke(evt);
 
                 if (evt.IsConsoleHost) _ = ResolveWindowLaterAsync(evt);

@@ -20,16 +20,35 @@ public static class ConsoleHost
         if (_attached) return;
         _attached = true;
 
-        if (!AttachConsole(ATTACH_PARENT_PROCESS))
+        // AttachConsole resets the standard handles of a windowed process, which would throw
+        // away a redirection the caller set up ("wymcmd list --json > out.json"). Remember the
+        // inherited handles first and put them back afterwards.
+        var inheritedOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        var inheritedError = GetStdHandle(STD_ERROR_HANDLE);
+        var outputRedirected = IsRedirected(inheritedOut);
+        var errorRedirected = IsRedirected(inheritedError);
+
+        if (!AttachConsole(ATTACH_PARENT_PROCESS) && !outputRedirected)
             AllocConsole();
+
+        if (outputRedirected) SetStdHandle(STD_OUTPUT_HANDLE, inheritedOut);
+        if (errorRedirected) SetStdHandle(STD_ERROR_HANDLE, inheritedError);
 
         var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
         Console.SetOut(stdout);
         Console.OutputEncoding = new UTF8Encoding(false);
 
         var handle = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (GetConsoleMode(handle, out var mode))
-            Colors = SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        Colors = !outputRedirected && GetConsoleMode(handle, out var mode)
+                 && SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+
+    /// <summary>A handle pointing at a file or a pipe rather than at a console.</summary>
+    private static bool IsRedirected(IntPtr handle)
+    {
+        if (handle == IntPtr.Zero || handle == new IntPtr(-1)) return false;
+        var type = GetFileType(handle);
+        return type != FILE_TYPE_CHAR && type != 0;
     }
 
     public static void Detach()

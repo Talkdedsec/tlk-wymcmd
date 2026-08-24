@@ -1,3 +1,4 @@
+using System.Security;
 using Microsoft.Win32;
 using Wymcmd.Core.Diagnostics;
 using Wymcmd.Core.Store;
@@ -17,16 +18,35 @@ public static class BlackBoxInstaller
 
     private static string SessionKey => $@"{AutologgerRoot}\{AppPaths.BlackBoxSessionName}";
 
+    /// <summary>
+    /// The autologger key is admin-readable only, so a normal user can see that it exists but
+    /// not what is in it. Both answers are reported honestly instead of guessing.
+    /// </summary>
     public static bool IsInstalled()
     {
-        using var key = Registry.LocalMachine.OpenSubKey(SessionKey);
-        return key is not null;
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(SessionKey);
+            return key is not null;
+        }
+        catch (SecurityException)
+        {
+            return true;
+        }
     }
 
-    public static bool IsEnabled()
+    public static bool? IsEnabled()
     {
-        using var key = Registry.LocalMachine.OpenSubKey(SessionKey);
-        return key?.GetValue("Start") is int start && start == 1;
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(SessionKey);
+            if (key is null) return false;
+            return key.GetValue("Start") is int start && start == 1;
+        }
+        catch (SecurityException)
+        {
+            return null;
+        }
     }
 
     public static long TraceSizeBytes()

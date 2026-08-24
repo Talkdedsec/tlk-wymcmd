@@ -43,19 +43,17 @@ public static class SourceInspector
 
     public static SourceStatus BlackBox()
     {
-        using var key = Registry.LocalMachine.OpenSubKey(
-            $@"SYSTEM\CurrentControlSet\Control\WMI\Autologger\{AppPaths.BlackBoxSessionName}");
+        if (!BlackBoxInstaller.IsInstalled()) return new SourceStatus("blackbox", SourceState.Missing);
 
-        if (key is null) return new SourceStatus("blackbox", SourceState.Missing);
+        var size = BlackBoxInstaller.TraceSizeBytes();
+        var detail = size > 0 ? $"{size / (1024 * 1024)} MB" : null;
 
-        var enabled = key.GetValue("Start") is int start && start == 1;
-        var file = key.GetValue("LogFileName") as string;
-        var size = file is not null && File.Exists(file) ? new FileInfo(file).Length : 0;
-
-        return new SourceStatus(
-            "blackbox",
-            enabled ? SourceState.Ok : SourceState.Degraded,
-            size > 0 ? $"{size / (1024 * 1024)} MB" : null);
+        return BlackBoxInstaller.IsEnabled() switch
+        {
+            true => new SourceStatus("blackbox", SourceState.Ok, detail),
+            false => new SourceStatus("blackbox", SourceState.Degraded, detail),
+            null => new SourceStatus("blackbox", SourceState.Ok, detail ?? "installed")
+        };
     }
 
     private static SourceStatus SecurityAudit()
@@ -151,7 +149,22 @@ public static class SourceInspector
     {
         if (!File.Exists(AppPaths.Database)) return new SourceStatus("database", SourceState.Degraded, "empty");
 
-        var size = new FileInfo(AppPaths.Database).Length;
-        return new SourceStatus("database", SourceState.Ok, $"{size / 1024} KB");
+        var size = new FileInfo(AppPaths.Database).Length / 1024;
+
+        try
+        {
+            using var store = new EventStore();
+            var (count, oldest, newest) = store.Bounds();
+
+            var detail = count == 0
+                ? $"{size} KB, no events"
+                : $"{size} KB, {count} events, {oldest:g} - {newest:g}";
+
+            return new SourceStatus("database", count == 0 ? SourceState.Degraded : SourceState.Ok, detail);
+        }
+        catch (Exception ex)
+        {
+            return new SourceStatus("database", SourceState.Degraded, ex.Message);
+        }
     }
 }
