@@ -52,6 +52,9 @@ public static class Uninstall
             removed.Add(Loc.T("uninstall.service"));
         }
 
+        if (PathInstaller.Uninstall())
+            removed.Add(Loc.T("uninstall.path_entry"));
+
         if (purge)
         {
             // Data can sit in two places: the shared folder, and a per-user fallback from any

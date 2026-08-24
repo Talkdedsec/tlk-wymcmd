@@ -24,7 +24,7 @@
     <Product>Why My CMD Opened</Product>
     <Company>Talkdedsec</Company>
     <Description>Why My CMD Opened - find out what launched that console window (wymcmd)</Description>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
