@@ -308,7 +308,8 @@
     "shortcut": "başlat menüsü kısayolu oluşturuldu",
     "path_added": "PATH'e eklendi - yeni bir terminal aç ve sadece şunu yaz: wymcmd",
     "path_already": "zaten PATH'te - yeni bir terminal aç ve şunu yaz: wymcmd",
-    "failed": "kurulamadı: {0}"
+    "failed": "kurulamadı: {0}",
+    "in_use": "kurulu kopya çalışıyor - wymcmd penceresini (ve varsa wymcmd watch'ı) kapatıp tekrar dene: {0}"
   },
   "prune": {
     "policy": "{0} gün, en fazla {1} MB saklanıyor",

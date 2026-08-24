@@ -308,7 +308,8 @@
     "shortcut": "start menu shortcut created",
     "path_added": "added to your PATH - open a new terminal, then just type: wymcmd",
     "path_already": "already on your PATH - open a new terminal and type: wymcmd",
-    "failed": "could not install: {0}"
+    "failed": "could not install: {0}",
+    "in_use": "an installed copy is running - close the wymcmd window (and any wymcmd watch) and try again: {0}"
   },
   "prune": {
     "policy": "keeping {0} days, at most {1} MB",

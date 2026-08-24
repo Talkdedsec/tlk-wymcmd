@@ -28,6 +28,12 @@ public static class Install
             ConsoleHost.Bad(Loc.T("install.failed", PathInstaller.DefaultDirectory));
             return CommandRouter.ExitError;
         }
+        catch (IOException ex) when ((uint)ex.HResult is 0x80070020 or 0x80070021)
+        {
+            // Sharing violation: an installed copy is running, and it cannot overwrite itself.
+            ConsoleHost.Bad(Loc.T("install.in_use", PathInstaller.DefaultDirectory));
+            return CommandRouter.ExitError;
+        }
         catch (IOException ex)
         {
             ConsoleHost.Bad(Loc.T("install.failed", ex.Message));
