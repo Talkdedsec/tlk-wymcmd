@@ -210,7 +210,25 @@
     "empty_list": "Henüz kayıt yok. \"İzlemeye başla\" de ya da Kaynaklar'dan Windows'un senin için kaydetmesini aç.",
     "empty_detail": "Soldan bir açılış seç: kimin, neden başlattığı burada görünür.",
     "watching_service": "nöbet servisi üzerinden izleniyor",
-    "stats_button": "İstatistik"
+    "stats_button": "İstatistik",
+    "rules_button": "Kurallar",
+    "rules_title": "Kurallar",
+    "rules_hint": "Kurallar yalnız canlı, tuzak ve nöbet modunda çalışır. Her satır, son bir haftalık kayıtta kaç kez eşleşeceğini gösterir.",
+    "rule_from_selection": "Seçili açılıştan yeni kural",
+    "rule_save": "Kaydet",
+    "rule_reload": "Yeniden yükle",
+    "rule_remove": "Sil",
+    "export": "Dışa aktar",
+    "export_done": "{0} olay {1} dosyasına yazıldı",
+    "export_empty": "bu filtreyle dışa aktarılacak bir şey yok",
+    "timeline_button": "Zaman tüneli",
+    "timeline_title": "Bir anın etrafında ne oldu",
+    "timeline_hint": "O dakika için makinedeki tüm kaynakları okur: kaydedici, Güvenlik günlüğü, Sysmon, Görev Zamanlayıcı ve PowerShell kaydı.",
+    "timeline_hint_limited": "Yönetici olmadan çalışıyor: kaydedici ve yerel veritabanı okunur, Windows olay günlükleri okunamaz.",
+    "timeline_moment": "an",
+    "timeline_radius": "yarıçap",
+    "timeline_show": "Göster",
+    "timeline_working": "tüm kaynaklar okunuyor..."
   },
   "timeline": {
     "header": "{0} civarı zaman tüneli  (+/- {1})"
@@ -266,7 +284,9 @@
     "removed": "kural {0} silindi",
     "enabled": "kural {0} açıldı",
     "disabled": "kural {0} kapatıldı",
-    "dry_run": "kayıtlı {0} açılışta eşleşecekti"
+    "dry_run": "kayıtlı {0} açılışta eşleşecekti",
+    "matches_everything": "her şeyle eşleşir",
+    "seed_from": "{0} açılışından dolduruldu"
   },
   "export": {
     "written": "{0} olay {1} dosyasına yazıldı"

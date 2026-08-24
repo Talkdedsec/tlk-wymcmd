@@ -222,6 +222,41 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Refresh() => LoadHistory();
 
+    /// <summary>Writes what the current filter shows, in the format the chosen extension implies.</summary>
+    public void Export()
+    {
+        if (Events.Count == 0)
+        {
+            StatusText = Loc.T("gui.export_empty");
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = $"wymcmd-{DateTime.Now:yyyyMMdd-HHmmss}",
+            DefaultExt = ".csv",
+            Filter = "CSV (*.csv)|*.csv|JSON lines (*.jsonl)|*.jsonl|Report (*.md)|*.md",
+            InitialDirectory = AppPaths.ExportDirectory
+        };
+
+        Directory.CreateDirectory(AppPaths.ExportDirectory);
+        if (dialog.ShowDialog() != true) return;
+
+        var events = Events.ToList();
+        var extension = Path.GetExtension(dialog.FileName).ToLowerInvariant();
+
+        var content = extension switch
+        {
+            ".jsonl" => string.Join(Environment.NewLine, events.Select(Exporter.Json)),
+            ".md" => string.Join(Environment.NewLine + Environment.NewLine,
+                events.OrderByDescending(evt => evt.Risk).Take(50).Select(ReportBuilder.Markdown)),
+            _ => Exporter.Csv(events)
+        };
+
+        File.WriteAllText(dialog.FileName, content, new System.Text.UTF8Encoding(false));
+        StatusText = Loc.T("gui.export_done", events.Count, dialog.FileName);
+    }
+
     [RelayCommand]
     private void KillSelected()
     {

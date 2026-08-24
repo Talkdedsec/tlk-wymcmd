@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Model;
 using Wymcmd.Core.Why;
@@ -72,35 +71,7 @@ public static class EventFormatter
         }
     }
 
-    public static string Json(ProcEvent evt) => JsonSerializer.Serialize(new
-    {
-        pid = evt.Pid,
-        parentPid = evt.ParentPid,
-        startTime = evt.StartTime,
-        exitTime = evt.ExitTime,
-        exitCode = evt.ExitCode,
-        image = evt.ImageName,
-        imagePath = evt.ImagePath,
-        commandLine = evt.CommandLine,
-        decoded = evt.DecodedCommand,
-        workingDirectory = evt.WorkingDirectory,
-        user = evt.UserName,
-        sessionId = evt.SessionId,
-        elevated = evt.Elevated,
-        window = evt.Window.ToString(),
-        signature = new { status = evt.Signature.Status.ToString(), publisher = evt.Signature.Publisher },
-        source = evt.Source is null ? null : new
-        {
-            kind = evt.Source.Kind.ToString(),
-            name = evt.Source.Name,
-            location = evt.Source.Location
-        },
-        confidence = evt.Confidence.ToString(),
-        evidence = evt.Sources.ToString(),
-        risk = evt.Risk,
-        riskFactors = evt.RiskFactors.Select(f => new { key = f.Key, weight = f.Weight, detail = f.Detail }),
-        chain = evt.Chain.Select(link => new { pid = link.Pid, image = link.ImageName, commandLine = link.CommandLine })
-    });
+    public static string Json(ProcEvent evt) => Core.Store.Exporter.Json(evt);
 
     private static string SignatureText(ProcEvent evt) => evt.Signature.Status switch
     {

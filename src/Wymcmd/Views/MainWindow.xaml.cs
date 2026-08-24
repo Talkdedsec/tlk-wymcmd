@@ -29,4 +29,12 @@ public partial class MainWindow : Window
 
     private void OnStatsClick(object sender, RoutedEventArgs e)
         => new StatsWindow(_model.Store) { Owner = this }.ShowDialog();
+
+    private void OnTimelineClick(object sender, RoutedEventArgs e)
+        => new TimelineWindow(_model.Store) { Owner = this }.ShowDialog();
+
+    private void OnRulesClick(object sender, RoutedEventArgs e)
+        => new RulesWindow(_model.Store, _model.Selected) { Owner = this }.ShowDialog();
+
+    private void OnExportClick(object sender, RoutedEventArgs e) => _model.Export();
 }
