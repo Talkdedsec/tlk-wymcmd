@@ -1,0 +1,28 @@
+name: Wrong verdict
+description: wymcmd blamed the wrong thing, or could not attribute a launch
+labels: [attribution]
+body:
+  - type: textarea
+    id: verdict
+    attributes:
+      label: What wymcmd said
+      description: "Output of: wymcmd why <pid>"
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: truth
+    attributes:
+      label: What actually started it
+      description: How do you know? A task name, a script, a shortcut, an installer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: wymcmd doctor
+      render: text
+    validations:
+      required: true

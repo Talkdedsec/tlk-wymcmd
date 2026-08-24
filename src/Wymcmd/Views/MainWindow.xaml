@@ -4,7 +4,7 @@
         xmlns:conv="clr-namespace:Wymcmd.Converters"
         xmlns:loc="clr-namespace:Wymcmd.Core.Localization"
         xmlns:vm="clr-namespace:Wymcmd.ViewModels"
-        Title="wymcmd"
+        Title="Why My CMD Opened"
         Width="1280" Height="800" MinWidth="900" MinHeight="560"
         Background="{StaticResource Background}"
         WindowStartupLocation="CenterScreen">
@@ -35,15 +35,27 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Image Source="/Assets/brand/logo.png" Height="34" Width="34" RenderOptions.BitmapScalingMode="HighQuality" />
                     <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="wymcmd" FontSize="17" FontWeight="SemiBold" />
-                        <TextBlock Text="{loc:T app.subtitle}" Style="{StaticResource Label}" />
+                        <TextBlock Text="{loc:T app.long_name}" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Label}">
+                            <Run Text="wymcmd" Foreground="{StaticResource Mint}" />
+                            <Run Text="  ·  " />
+                            <Run Text="{loc:T app.subtitle}" />
+                        </TextBlock>
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <ComboBox Width="104" ItemsSource="{Binding Languages}"
-                              DisplayMemberPath="Name"
-                              SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" />
+                <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center" ItemHeight="32">
+                    <Border BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6"
+                            Background="{StaticResource SurfaceRaised}" Padding="2" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="EN" Command="{Binding SetLanguageCommand}" CommandParameter="en"
+                                    Padding="10,3" BorderThickness="0"
+                                    Style="{StaticResource LanguageButton}" Tag="{Binding EnglishActive}" />
+                            <Button Content="TR" Command="{Binding SetLanguageCommand}" CommandParameter="tr"
+                                    Padding="10,3" BorderThickness="0"
+                                    Style="{StaticResource LanguageButton}" Tag="{Binding TurkishActive}" />
+                        </StackPanel>
+                    </Border>
                     <Button Content="{loc:T gui.stats_button}" Click="OnStatsClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.sources_button}" Click="OnSourcesClick" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.refresh}" Command="{Binding RefreshCommand}" Margin="8,0,0,0" />
@@ -51,7 +63,7 @@
                             Command="{Binding ToggleWatchCommand}" Style="{StaticResource AccentButton}" Margin="8,0,0,0" />
                     <Button Content="{loc:T gui.panic}" Command="{Binding PanicCommand}" Margin="8,0,0,0"
                             Foreground="{StaticResource Danger}" />
-                </StackPanel>
+                </WrapPanel>
             </Grid>
         </Border>
 

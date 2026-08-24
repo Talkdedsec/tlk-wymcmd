@@ -2,6 +2,7 @@ using Microsoft.Diagnostics.Tracing;
 using Wymcmd.Core.Diagnostics;
 using Wymcmd.Core.Model;
 using Wymcmd.Core.Store;
+using Wymcmd.Core.Windows;
 
 namespace Wymcmd.Core.Capture;
 
@@ -48,7 +49,7 @@ public static class BlackBoxReader
                     ParentPid = Int(data, "ParentProcessID"),
                     StartKey = ULong(data, "ProcessSequenceNumber"),
                     StartTime = data.TimeStamp,
-                    ImagePath = NormalizeDevicePath(imagePath),
+                    ImagePath = PathNames.Normalize(imagePath),
                     SessionId = Int(data, "SessionID"),
                     Sources = EvidenceSource.BlackBox,
                     Confidence = Confidence.Certain
@@ -74,18 +75,6 @@ public static class BlackBoxReader
         }
 
         return results;
-    }
-
-    /// <summary>\Device\HarddiskVolume4\Windows\... is how the kernel spells C:\Windows\...</summary>
-    private static string NormalizeDevicePath(string path)
-    {
-        if (path.StartsWith(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase))
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), path[12..]);
-
-        if (!path.StartsWith(@"\Device\", StringComparison.OrdinalIgnoreCase)) return path;
-
-        var parts = path.Split('\\', 4);
-        return parts.Length == 4 ? Path.Combine(Environment.SystemDirectory[..3], parts[3]) : path;
     }
 
     private static string? Payload(TraceEvent data, string name)

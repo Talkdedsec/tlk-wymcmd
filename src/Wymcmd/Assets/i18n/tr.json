@@ -2,7 +2,8 @@
   "app": {
     "name": "wymcmd",
     "tagline": "CMD'm Neden Açıldı",
-    "subtitle": "Terminalini neyin açtığını gör."
+    "subtitle": "Terminalini neyin açtığını gör.",
+    "long_name": "Why My CMD Opened"
   },
   "time": {
     "ago": {

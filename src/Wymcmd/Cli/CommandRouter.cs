@@ -20,6 +20,23 @@ public sealed record CliOptions(string[] Args)
     public int Number(string flag, int fallback)
         => int.TryParse(Value(flag), out var value) ? value : fallback;
 
+    /// <summary>
+    /// The command word, if the caller gave one. Values that belong to a global flag
+    /// ("--lang en") are not commands, which is what tells "wymcmd --lang en" to open the window.
+    /// </summary>
+    public string? Command()
+    {
+        for (var i = 0; i < Args.Length; i++)
+        {
+            if (GlobalValueFlags.Contains(Args[i], StringComparer.OrdinalIgnoreCase)) { i++; continue; }
+            if (Args[i].StartsWith('-')) continue;
+            return Args[i];
+        }
+        return null;
+    }
+
+    private static readonly string[] GlobalValueFlags = ["--lang"];
+
     /// <summary>Positional arguments, flags and their values removed.</summary>
     public string[] Positional(params string[] flagsWithValues)
     {
@@ -48,7 +65,7 @@ public static class CommandRouter
         var options = new CliOptions(args);
         Loc.Use(options.Value("--lang") ?? Loc.DetectSystemLanguage());
 
-        var command = args.FirstOrDefault(a => !a.StartsWith('-'))?.ToLowerInvariant() ?? "help";
+        var command = options.Command()?.ToLowerInvariant() ?? "help";
         var rest = new CliOptions(args.SkipWhile(a => !a.Equals(command, StringComparison.OrdinalIgnoreCase)).Skip(1).ToArray());
 
         if (options.Has("--version") && command is "help" or "") return Version();

@@ -1,0 +1,36 @@
+name: Bug report
+description: Something behaved incorrectly
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of "wymcmd --version"
+      placeholder: wymcmd 0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: wymcmd doctor
+      description: Paste the output. It shows which capture mode was active.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, what you got.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Event details (optional)
+      description: "Output of: wymcmd why <pid> --json - redact anything sensitive in the command line first."
+      render: json

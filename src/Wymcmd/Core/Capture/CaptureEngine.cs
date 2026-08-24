@@ -116,8 +116,8 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     private ProcEvent Enrich(RawStart raw)
     {
-        var imagePath = raw.ImagePath;
-        if (string.IsNullOrEmpty(imagePath) || !Path.IsPathRooted(imagePath))
+        var imagePath = PathNames.Normalize(raw.ImagePath);
+        if (imagePath.Length == 0 || !Path.IsPathRooted(imagePath))
             imagePath = ProcessQuery.ImagePath(raw.Pid) ?? imagePath;
 
         var commandLine = string.IsNullOrEmpty(raw.CommandLine)
