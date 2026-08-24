@@ -109,7 +109,8 @@
       "service": "nöbet servisini kur veya yönet",
       "doctor": "neyin açık neyin eksik olduğunu kontrol et",
       "uninstall": "wymcmd'nin sistemde bıraktığı her izi kaldır",
-      "install": "wymcmd'yi kalıcı bir yere kopyala ve PATH'e ekle"
+      "install": "wymcmd'yi kalıcı bir yere kopyala ve PATH'e ekle",
+      "prune": "saklama politikasını kayıtlı geçmişe şimdi uygula"
     },
     "opt": {
       "lang": "çıktı dili (en, tr)",
@@ -283,5 +284,11 @@
     "path_added": "PATH'e eklendi - yeni bir terminal aç ve sadece şunu yaz: wymcmd",
     "path_already": "zaten PATH'te - yeni bir terminal aç ve şunu yaz: wymcmd",
     "failed": "kurulamadı: {0}"
+  },
+  "prune": {
+    "policy": "{0} gün, en fazla {1} MB saklanıyor",
+    "nothing": "silinecek bir şey yok - {0} olay kayıtlı",
+    "done": "{0} olay silindi, {1} olay kaldı, {2} KB geri kazanıldı",
+    "forever": "sınırsız"
   }
 }

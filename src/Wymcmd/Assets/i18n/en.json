@@ -109,7 +109,8 @@
       "service": "install or control the watchdog service",
       "doctor": "check what is available and what is missing",
       "uninstall": "remove every trace wymcmd left on this system",
-      "install": "copy wymcmd somewhere permanent and add it to your PATH"
+      "install": "copy wymcmd somewhere permanent and add it to your PATH",
+      "prune": "apply the retention policy to the recorded history now"
     },
     "opt": {
       "lang": "output language (en, tr)",
@@ -283,5 +284,11 @@
     "path_added": "added to your PATH - open a new terminal, then just type: wymcmd",
     "path_already": "already on your PATH - open a new terminal and type: wymcmd",
     "failed": "could not install: {0}"
+  },
+  "prune": {
+    "policy": "keeping {0} days, at most {1} MB",
+    "nothing": "nothing to remove - {0} events recorded",
+    "done": "{0} events removed, {1} left, {2} KB reclaimed",
+    "forever": "everything"
   }
 }
