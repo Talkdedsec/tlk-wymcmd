@@ -59,6 +59,11 @@ risk: 25/100
   <img src="docs/img/gui-en.png" alt="The wymcmd window: live launches, ancestry, decoded command line, risk" width="920">
 </p>
 
+The window is the same engine with a different face: **Timeline** rebuilds a moment from every
+source, **Rules** shows each rule with how often it would have fired and can write one from the
+selected launch, **Stats** reads the patterns out of your history, **Sources** turns the Windows
+recording on or off, and **Export** writes what you are looking at as CSV, JSON lines or a report.
+
 ## Nothing runs in the background
 
 That is a design decision, not a missing feature. There are five ways for wymcmd to know what
@@ -67,25 +72,27 @@ happened, and only the last one is a resident process — it ships **disabled**.
 | Mode | Resident process | What you get |
 |---|:---:|---|
 | **Forensic** — default | none | Rebuilds history from what Windows already recorded: Security log 4688/4689, Sysmon, Task Scheduler, PowerShell script blocks, Prefetch, BAM, UserAssist |
-| **Black box** — recommended | **none** | An ETW AutoLogger that *Windows itself* starts at boot and writes into a capped circular file. No process of ours in memory, no CPU while idle, full fidelity waiting for you when you open the tool |
+| **Black box** — recommended | **none** | Two ETW AutoLoggers that *Windows itself* runs, writing into capped circular files - command lines included. No process of ours in memory, no CPU while idle, and it starts recording the moment you enable it |
 | **Live** | only while open | Real-time kernel tracing while `wymcmd watch` or the window is open |
 | **Trap** | until it expires | "Catch it if it happens again", with a deadline; it closes itself |
 | **Watchdog service** | yes, opt-in | Round-the-clock rule enforcement, for people who want it |
 
 ```console
-wymcmd doctor           # what this machine can currently tell you
-wymcmd sources enable   # let Windows record process creation with command lines
-wymcmd blackbox on      # boot-time recorder, still no resident process
+wymcmd doctor            # what this machine can currently tell you
+wymcmd sources enable    # let Windows record process creation with command lines
+wymcmd blackbox on       # recorder with no resident process
+wymcmd blackbox read     # what the recorder is holding right now
 ```
 
 ## Quickstart
 
 ```console
-wymcmd                     # the window
+wymcmd install             # put it on your PATH (per user, no administrator)
 wymcmd doctor              # see what is available, and what is missing
 wymcmd sources enable      # one-time, elevated, fully reversible
 wymcmd blackbox on         # optional: never miss anything again, with nothing resident
 wymcmd why last            # what opened that console?
+wymcmd                     # the window
 ```
 
 Nothing is enabled behind your back: `sources enable` and `blackbox on` are the only commands
@@ -102,8 +109,9 @@ that change the machine, both are explicit, and `wymcmd uninstall --purge` puts 
 - **Whether it had a window** — a console with no window is the strongest signal that something
   did not want to be seen. Catalog-signed Windows binaries are recognised properly, so system
   tools are never mislabelled as unsigned
-- **Whether this binary is a regular here** — Prefetch, BAM and UserAssist answer "first time
-  today" versus "runs every morning"
+- **Whether this binary is a regular here** — Prefetch gives the run count and the last eight
+  run times, BAM the exact last run, AmCache the day this machine first catalogued the file and
+  its SHA-1
 - **How worried to be** — a 0-100 score that always shows its reasons
 
 ## Commands
@@ -120,11 +128,12 @@ wymcmd kill <pid> [--tree]
 wymcmd rules add --image cmd.exe --match "downloadstring" --action kill
 wymcmd rules test               # what your rules would have done over recorded history
 wymcmd export --since 24h --format csv|jsonl|report [--forensic]
-wymcmd blackbox on|off|status
+wymcmd blackbox on|off|status|read
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
 wymcmd install                  # put wymcmd on your PATH (per user, no administrator)
+wymcmd prune [--days N] [--max-mb N]
 wymcmd uninstall --purge        # revert every change, delete every file
 ```
 
@@ -154,13 +163,18 @@ Every field carries where it came from, and the answer says how sure it is.
 | Evidence | Gives | Needs |
 |---|---|---|
 | ETW kernel tracing | Every start, with the command line, even at 30 ms | administrator, while watching |
-| Black box (AutoLogger) | The same fidelity for the past, with nothing resident | one-time setup, elevated |
+| Black box (AutoLogger) | The same, for the past, with nothing resident - two sessions, one of which carries command lines | one-time setup, elevated |
 | Security log 4688/4689 | Start, parent, command line, exit status | `wymcmd sources enable` |
 | Sysmon event 1 | Hashes, parent command line, integrity level | Sysmon, if you run it |
 | Task Scheduler log | The task name behind a launch, by pid | `wymcmd sources enable` |
 | PowerShell 4104 | The script that actually ran, deobfuscated | `wymcmd sources enable` |
-| Prefetch / BAM / UserAssist | When this binary last ran, how often | administrator for some |
+| Prefetch | Run count and the last eight run times, parsed from the file | administrator |
+| BAM / UserAssist | Exact last run per user; what was launched from the shell | administrator for BAM |
+| AmCache | When this machine first catalogued the binary, and its SHA-1 | administrator |
 | WMI polling | A fallback when nothing else is available | nothing — and it says what it misses |
+
+SRUM is deliberately not read: it is an ESE database whose contribution here would be resource
+usage per app, which does not help answer why a console opened.
 
 The verdict is labelled `certain`, `high` or `inferred`, and the detail pane shows which source
 each field came from. Nothing is invented to fill a gap.
@@ -170,6 +184,10 @@ each field came from. Nothing is invented to fill a gap.
 Everything stays on the machine: one SQLite database under `%ProgramData%\wymcmd`
 (`%LOCALAPPDATA%\wymcmd` when not elevated). No telemetry, no network calls, no auto-update.
 The optional hash lookup is off by default and never turns itself on.
+
+It also forgets on purpose: 30 days and 256 MB by default, both in `settings.json`, applied in
+the background and on demand with `wymcmd prune`. The black box traces are capped when they are
+created and never grow past that.
 
 `wymcmd uninstall --purge` reverts the audit policy changes it made (and only those — it keeps a
 journal), removes the black box and its trace, removes the service, and deletes the data.
@@ -206,11 +224,19 @@ The zip holds two files that belong together:
 | `wymcmd.exe` | The tool. Double-click it for the window. |
 | `wymcmd.com` | A 1 MB console launcher. Windows shells resolve `.com` before `.exe`, so typing `wymcmd list` runs this, which waits for the tool to finish and passes its exit code back. Without it a shell would return the prompt immediately and your redirection would race the output. |
 
+The binary is not code-signed, so SmartScreen calls it an unrecognised app the first time:
+"More info", then "Run anyway". Every release ships a `.sha256` beside the download if you would
+rather check the file than trust the name.
+
+An ARM64 zip is published as well, built from the same source. No ARM machine runs the test
+suite, so treat that one as untested.
+
 ## Build from source
 
 Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download). The launcher is compiled
-ahead of time, which needs the Visual Studio C++ build tools; skip that step if you only want
-the window.
+ahead of time, which needs the Visual Studio C++ build tools, and that compiler expects
+`vswhere.exe` on PATH (`%ProgramFiles(x86)%\Microsoft Visual Studio\Installer`). Skip that step
+if you only want the window.
 
 ```console
 git clone https://github.com/Talkdedsec1/tlk-wymcmd
@@ -220,9 +246,14 @@ dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
 copy launcher\wymcmd-launcher.exe publish\wymcmd.com
 ```
 
+```console
+dotnet test src/Wymcmd.Tests/Wymcmd.Tests.csproj
+```
+
 Repository layout: `src/Wymcmd/Core` holds capture, forensics, attribution, rules and storage;
-`Cli` and `Views`/`ViewModels` are two front ends over the same engine; `scripts/` carries the
-translation gate, the scenario generator and the capture load test.
+`Cli` and `Views`/`ViewModels` are two front ends over the same engine; `src/Wymcmd.Tests` covers
+what can be tested without a machine to watch; `scripts/` carries the translation gate, the
+scenario generator and the capture load test.
 
 ## License
 

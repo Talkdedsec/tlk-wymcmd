@@ -59,6 +59,11 @@ risk: 25/100
   <img src="docs/img/gui-tr.png" alt="wymcmd penceresi: canlı açılışlar, üst zincir, çözülmüş komut satırı, risk" width="920">
 </p>
 
+Pencere aynı motorun başka bir yüzü: **Zaman tüneli** bir anı tüm kaynaklardan geri kurar,
+**Kurallar** her kuralın kaç kez eşleşeceğini gösterir ve seçili açılıştan yeni kural yazar,
+**İstatistik** geçmişteki desenleri okur, **Kaynaklar** Windows kaydını açıp kapatır, **Dışa
+aktar** ise baktığın listeyi CSV, JSON satırları ya da rapor olarak yazar.
+
 ## Arka planda hiçbir şey çalışmıyor
 
 Bu eksik bir özellik değil, bilinçli bir karar. wymcmd'nin olan biteni öğrenmek için beş yolu
@@ -67,25 +72,27 @@ var; yalnızca sonuncusu yerleşik bir süreç ve o da **kapalı geliyor**.
 | Mod | Yerleşik süreç | Ne veriyor |
 |---|:---:|---|
 | **Adli** — varsayılan | yok | Windows'un zaten tuttuğu kayıtlardan geçmişi geri kurar: Güvenlik günlüğü 4688/4689, Sysmon, Görev Zamanlayıcı, PowerShell script blokları, Prefetch, BAM, UserAssist |
-| **Kara kutu** — önerilen | **yok** | Açılışta **Windows'un kendisinin** başlattığı bir ETW AutoLogger, tavanı belli dairesel dosyaya yazar. Bellekte bize ait hiçbir şey yok, boştayken CPU maliyeti yok; aracı açtığında tam kayıt hazır bekliyor |
+| **Kara kutu** — önerilen | **yok** | **Windows'un kendisinin** çalıştırdığı iki ETW AutoLogger, tavanı belli dairesel dosyalara yazar - komut satırları dahil. Bellekte bize ait hiçbir şey yok, boştayken CPU maliyeti yok ve açtığın anda kaydetmeye başlar |
 | **Canlı** | yalnızca açıkken | `wymcmd watch` ya da pencere açıkken gerçek zamanlı çekirdek izleme |
 | **Tuzak** | süresi dolana kadar | "Bir daha olursa yakala", süreli; süre bitince kendini kapatır |
 | **Nöbet servisi** | evet, isteğe bağlı | 7/24 kural uygulaması isteyenler için |
 
 ```console
-wymcmd doctor           # bu makine şu an neyi söyleyebiliyor
-wymcmd sources enable   # Windows süreç oluşturmayı komut satırıyla kaydetsin
-wymcmd blackbox on      # açılış kaydı, yine yerleşik süreç yok
+wymcmd doctor            # bu makine şu an neyi söyleyebiliyor
+wymcmd sources enable    # Windows süreç oluşturmayı komut satırıyla kaydetsin
+wymcmd blackbox on       # yerleşik süreç gerektirmeyen kaydedici
+wymcmd blackbox read     # kaydedicide şu an ne var
 ```
 
 ## Hızlı başlangıç
 
 ```console
-wymcmd                     # pencere
+wymcmd install             # PATH'e koy (kullanıcı bazlı, yönetici gerekmez)
 wymcmd doctor              # ne var, ne eksik
 wymcmd sources enable      # tek seferlik, yönetici gerekir, tamamen geri alınabilir
 wymcmd blackbox on         # isteğe bağlı: bir daha hiçbir şey kaçmasın, yerleşik süreç olmadan
 wymcmd why last            # o konsolu ne açtı?
+wymcmd                     # pencere
 ```
 
 Arkandan hiçbir şey açılmıyor: makineyi değiştiren tek iki komut `sources enable` ve
@@ -102,8 +109,9 @@ Arkandan hiçbir şey açılmıyor: makineyi değiştiren tek iki komut `sources
 - **Penceresi var mıydı** — penceresiz bir konsol, bir şeyin görünmek istemediğinin en güçlü
   işaretidir. Katalog imzalı Windows dosyaları doğru tanınır; sistem araçları asla "imzasız"
   diye yaftalanmaz
-- **Bu dosya burada tanıdık mı** — Prefetch, BAM ve UserAssist "bugün ilk kez" ile "her sabah
-  çalışıyor" arasındaki farkı söyler
+- **Bu dosya burada tanıdık mı** — Prefetch çalıştırma sayısını ve son sekiz çalışmayı, BAM tam
+  son çalışma zamanını, AmCache ise dosyanın bu makinede ilk görüldüğü günü ve SHA-1'ini verir.
+  "Her sabah çalışıyor" ile "yirmi dakika önce belirdi" ayrı cevaplardır
 - **Ne kadar endişelenmeli** — 0-100 arası skor, ama her zaman gerekçeleri açık
 
 ## Komutlar
@@ -120,11 +128,12 @@ wymcmd kill <pid> [--tree]
 wymcmd rules add --image cmd.exe --match "downloadstring" --action kill
 wymcmd rules test               # kuralların kayıtlı geçmişte ne yapmış olacağı
 wymcmd export --since 24h --format csv|jsonl|report [--forensic]
-wymcmd blackbox on|off|status
+wymcmd blackbox on|off|status|read
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
 wymcmd install                  # wymcmd'yi PATH'e koy (kullanıcı bazlı, yönetici gerekmez)
+wymcmd prune [--days N] [--max-mb N]
 wymcmd uninstall --purge        # her değişikliği geri al, her dosyayı sil
 ```
 
@@ -154,13 +163,18 @@ Her alan nereden geldiğini taşır, cevap da ne kadar emin olduğunu söyler.
 | Kanıt | Ne veriyor | Ne gerekiyor |
 |---|---|---|
 | ETW çekirdek izleme | Her açılışı, komut satırıyla, 30 ms'lik olanı bile | yönetici, izlerken |
-| Kara kutu (AutoLogger) | Aynı sadakati geçmiş için, yerleşik süreç olmadan | tek seferlik kurulum, yönetici |
+| Kara kutu (AutoLogger) | Aynısını geçmiş için, yerleşik süreç olmadan - iki oturum, biri komut satırını da taşıyor | tek seferlik kurulum, yönetici |
 | Güvenlik günlüğü 4688/4689 | Açılış, üst süreç, komut satırı, çıkış kodu | `wymcmd sources enable` |
 | Sysmon olay 1 | Hash, üst komut satırı, bütünlük seviyesi | Sysmon kuruluysa |
 | Görev Zamanlayıcı günlüğü | Açılışın arkasındaki görev adını, pid üzerinden | `wymcmd sources enable` |
 | PowerShell 4104 | Gerçekte çalışan script, gizlenmemiş hâliyle | `wymcmd sources enable` |
-| Prefetch / BAM / UserAssist | Bu dosya en son ne zaman, kaç kez çalışmış | bazıları için yönetici |
+| Prefetch | Çalıştırma sayısı ve son sekiz çalışma zamanı, dosyadan çözülerek | yönetici |
+| BAM / UserAssist | Kullanıcı başına tam son çalışma; kabuktan neyin başlatıldığı | BAM için yönetici |
+| AmCache | Bu makinenin dosyayı ilk kataloglama zamanı ve SHA-1'i | yönetici |
 | WMI yoklama | Başka hiçbir şey yokken yedek | hiçbir şey — ve neyi kaçırdığını söyler |
+
+SRUM bilerek okunmuyor: bir ESE veritabanı ve buraya katkısı uygulama başına kaynak kullanımı
+olurdu; bu da bir konsolun neden açıldığını anlatmıyor.
 
 Sonuç `kesin`, `yüksek` ya da `çıkarım` olarak etiketlenir; detay panelinde her alanın hangi
 kaynaktan geldiği görünür. Boşluk doldurmak için hiçbir şey uydurulmaz.
@@ -170,6 +184,10 @@ kaynaktan geldiği görünür. Boşluk doldurmak için hiçbir şey uydurulmaz.
 Her şey makinende kalır: `%ProgramData%\wymcmd` (yönetici değilken `%LOCALAPPDATA%\wymcmd`)
 altında tek bir SQLite veritabanı. Telemetri yok, ağ çağrısı yok, otomatik güncelleme yok.
 İsteğe bağlı hash sorgusu varsayılan olarak kapalıdır ve kendiliğinden açılmaz.
+
+Bilerek unutur da: varsayılan 30 gün ve 256 MB, ikisi de `settings.json` içinde; arka planda ve
+istendiğinde `wymcmd prune` ile uygulanır. Kara kutu izleri oluşturulurken tavanı belirlenir,
+o tavanın üstüne çıkmaz.
 
 `wymcmd uninstall --purge` yaptığı denetim politikası değişikliklerini geri alır (yalnız kendi
 yaptıklarını — bir günlük tutuyor), kara kutuyu ve kaydını kaldırır, servisi siler, veriyi siler.
@@ -202,10 +220,19 @@ Zip'in içinde birbirine ait iki dosya var:
 | `wymcmd.exe` | Aracın kendisi. Çift tıklarsan pencere açılır. |
 | `wymcmd.com` | 1 MB'lık konsol başlatıcısı. Windows kabukları `.com` uzantısını `.exe`'den önce çözer; `wymcmd list` yazdığında bu çalışır, aracın bitmesini bekler ve çıkış kodunu geri verir. O olmadan kabuk komut istemini hemen döndürür ve yönlendirdiğin çıktı yarışa girer. |
 
+İkili dosya kod imzalı değil; SmartScreen ilk açılışta "tanınmayan uygulama" diyecek: "Daha fazla
+bilgi" sonra "Yine de çalıştır". Dosyaya isimden değil hash'ten güvenmek istersen her sürümde
+yanında bir `.sha256` var.
+
+ARM64 zip'i de yayımlanıyor, aynı kaynaktan derleniyor. ARM makinede test koşulmuyor, onu test
+edilmemiş kabul et.
+
 ## Kaynaktan derleme
 
 [.NET 10 SDK](https://dotnet.microsoft.com/download) gerekir. Başlatıcı önceden derlendiği için
-Visual Studio C++ build tools ister; yalnız pencereyi istiyorsan o adımı atlayabilirsin.
+Visual Studio C++ build tools ister ve derleyici `vswhere.exe`'yi PATH'te bekler
+(`%ProgramFiles(x86)%\Microsoft Visual Studio\Installer`). Yalnız pencereyi istiyorsan o adımı
+atlayabilirsin.
 
 ```console
 git clone https://github.com/Talkdedsec1/tlk-wymcmd
@@ -215,9 +242,14 @@ dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
 copy launcher\wymcmd-launcher.exe publish\wymcmd.com
 ```
 
+```console
+dotnet test src/Wymcmd.Tests/Wymcmd.Tests.csproj
+```
+
 Depo düzeni: `src/Wymcmd/Core` yakalama, adli katman, atıf, kurallar ve depolamayı barındırır;
-`Cli` ile `Views`/`ViewModels` aynı motorun iki yüzüdür; `scripts/` çeviri kapısını, senaryo
-üreticisini ve yakalama yük testini taşır.
+`Cli` ile `Views`/`ViewModels` aynı motorun iki yüzüdür; `src/Wymcmd.Tests` izlenecek bir makine
+olmadan test edilebilen kısmı kapsar; `scripts/` çeviri kapısını, senaryo üreticisini ve yakalama
+yük testini taşır.
 
 ## Lisans
 
