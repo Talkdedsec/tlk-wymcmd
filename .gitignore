@@ -2,6 +2,9 @@ bin/
 obj/
 publish/
 dist/
+shim-out/
+launcher/
+package/
 *.user
 *.suo
 .vs/
@@ -10,3 +13,6 @@ dist/
 *.db-wal
 *.db-shm
 dist/
+shim-out/
+launcher/
+package/
