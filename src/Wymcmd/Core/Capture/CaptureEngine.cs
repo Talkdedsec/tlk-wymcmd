@@ -95,7 +95,7 @@ public sealed class CaptureEngine : IAsyncDisposable
                 var raw = await reader.ReadAsync(token);
                 var evt = Enrich(raw);
 
-                if (EnforceRules) Apply(evt);
+                Apply(evt);
 
                 _store.Enqueue(evt);
                 if (++_enriched % 250 == 0) Log.Info($"events enriched and queued: {_enriched}");
@@ -199,12 +199,19 @@ public sealed class CaptureEngine : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Rules are always matched so the caller can report what would happen; only the actions
+    /// that change something wait for EnforceRules.
+    /// </summary>
     private void Apply(ProcEvent evt)
     {
         var rule = _rules.FirstMatch(evt);
         if (rule is null) return;
 
         RuleFired?.Invoke(evt, rule);
+
+        if (!EnforceRules) return;
+        if (rule.Action is RuleAction.Allow or RuleAction.Log or RuleAction.Notify) return;
 
         var result = rule.Action switch
         {
@@ -215,7 +222,6 @@ public sealed class CaptureEngine : IAsyncDisposable
             _ => new ActionResult(ActionOutcome.Done)
         };
 
-        if (rule.Action is RuleAction.Allow or RuleAction.Log or RuleAction.Notify) return;
         Log.Info($"rule '{rule.Name}' -> {rule.Action} on {evt.ImageName} ({evt.Pid}): {result.Outcome}");
     }
 
