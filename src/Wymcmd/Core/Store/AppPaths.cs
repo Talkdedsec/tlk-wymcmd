@@ -14,11 +14,15 @@ public static class AppPaths
     public static string Settings => Path.Combine(Root, "settings.json");
     public static string LogFile => Path.Combine(Root, "wymcmd.log");
     public static string BlackBoxTrace => Path.Combine(Root, "blackbox.etl");
+
+    /// <summary>The second black box: a system trace session, which carries command lines.</summary>
+    public static string BlackBoxSystemTrace => Path.Combine(Root, "blackbox-system.etl");
     public static string AutostartBaseline => Path.Combine(Root, "autostart-baseline.json");
     public static string ExportDirectory => Path.Combine(Root, "exports");
 
     public const string PipeName = "wymcmd";
     public const string BlackBoxSessionName = "WymcmdBlackBox";
+    public const string BlackBoxSystemSessionName = "WymcmdBlackBoxSystem";
     public const string LiveSessionName = "WymcmdLive";
 
     private static string ResolveRoot()

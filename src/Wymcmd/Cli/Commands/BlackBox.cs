@@ -1,3 +1,4 @@
+using Wymcmd.Core.Capture;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Setup;
 using Wymcmd.Core.Store;
@@ -14,6 +15,7 @@ public static class BlackBox
         {
             "on" or "install" => TurnOn(options),
             "off" or "uninstall" => TurnOff(options),
+            "read" => Read(options),
             _ => Status()
         };
     }
@@ -58,6 +60,34 @@ public static class BlackBox
         return CommandRouter.ExitOk;
     }
 
+    /// <summary>Shows what the recorder itself holds, with no other source mixed in.</summary>
+    private static int Read(CliOptions options)
+    {
+        var window = Commands.List.ParseSpan(options.Value("--last") ?? "10m");
+        var events = BlackBoxReader.Read(DateTime.Now - window, DateTime.Now.AddMinutes(1));
+
+        if (options.Has("--console"))
+            events = events.Where(evt => evt.IsConsoleHost).ToList();
+
+        if (events.Count == 0)
+        {
+            ConsoleHost.Dim(Loc.T("blackbox.empty"));
+            return CommandRouter.ExitNotFound;
+        }
+
+        var withCommandLine = events.Count(evt => evt.CommandLine.Length > 0);
+
+        foreach (var evt in events.TakeLast(options.Number("--limit", 20)))
+        {
+            var command = evt.CommandLine.Length > 0 ? evt.CommandLine : ConsoleHost.Color("-", 90);
+            ConsoleHost.Line($"{evt.StartTime:HH:mm:ss}  {evt.ImageName,-20} {command}");
+        }
+
+        ConsoleHost.Line();
+        ConsoleHost.Dim(Loc.T("blackbox.read_summary", events.Count, withCommandLine));
+        return CommandRouter.ExitOk;
+    }
+
     private static int Status()
     {
         var installed = BlackBoxInstaller.IsInstalled();
@@ -75,7 +105,21 @@ public static class BlackBox
 
         if (installed)
         {
-            ConsoleHost.Dim($"{AppPaths.BlackBoxTrace}  ({size / (1024 * 1024)} MB)");
+            foreach (var session in BlackBoxInstaller.Describe())
+            {
+                var sessionState = session.Enabled switch
+                {
+                    true => Loc.T("doctor.ok"),
+                    false => Loc.T("doctor.missing"),
+                    null => Loc.T("doctor.detail.needs_admin")
+                };
+
+                ConsoleHost.Line($"  {session.Name,-24} {sessionState,-24} {session.Bytes / (1024 * 1024)} MB");
+                ConsoleHost.Dim($"    {session.File}");
+                ConsoleHost.Dim($"    {Loc.T(session.CarriesCommandLine ? "blackbox.with_command_lines" : "blackbox.without_command_lines")}");
+            }
+
+            ConsoleHost.Line();
             ConsoleHost.Dim(Loc.T("blackbox.no_process"));
         }
         else

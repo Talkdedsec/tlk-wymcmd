@@ -231,7 +231,11 @@
     "removed": "black box removed",
     "reboot_note": "starts recording at the next boot - no wymcmd process stays resident",
     "no_process": "no resident process: Windows writes this trace itself",
-    "how_to_enable": "enable with: wymcmd blackbox on"
+    "how_to_enable": "enable with: wymcmd blackbox on",
+    "with_command_lines": "system trace - records command lines",
+    "without_command_lines": "manifest trace - records every launch, without command lines",
+    "empty": "the recorder holds nothing for that window",
+    "read_summary": "{0} launches in the trace, {1} of them with a command line"
   },
   "service": {
     "installed": "watchdog service installed",
