@@ -19,6 +19,8 @@
         <conv:NullToCollapsedConverter x:Key="HideEmpty" />
         <conv:BoolToWatchTextConverter x:Key="WatchText" />
         <conv:EmptyToVisibleConverter x:Key="WhenEmpty" />
+        <conv:RiskFactorTextConverter x:Key="RiskFactorText" />
+        <conv:AncestorNameConverter x:Key="AncestorName" />
     </Window.Resources>
 
     <Grid>
@@ -179,7 +181,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Style="{StaticResource Mono}">
-                                        <Run Text="{Binding ImageName, Mode=OneWay}" />
+                                        <Run Text="{Binding ImageName, Mode=OneWay, Converter={StaticResource AncestorName}}" />
                                         <Run Text="{Binding Pid, Mode=OneWay, StringFormat=({0})}" Foreground="{StaticResource Muted}" />
                                     </TextBlock>
                                 </DataTemplate>
@@ -193,7 +195,7 @@
                                     <TextBlock Margin="0,1">
                                         <Run Text="{Binding Weight, Mode=OneWay, StringFormat=+{0}}" Foreground="{StaticResource Warn}" />
                                         <Run Text=" " />
-                                        <Run Text="{Binding Key, Mode=OneWay}" />
+                                        <Run Text="{Binding Key, Mode=OneWay, Converter={StaticResource RiskFactorText}}" />
                                     </TextBlock>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
