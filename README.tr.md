@@ -124,6 +124,7 @@ wymcmd blackbox on|off|status
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
+wymcmd install                  # wymcmd'yi PATH'e koy (kullanıcı bazlı, yönetici gerekmez)
 wymcmd uninstall --purge        # her değişikliği geri al, her dosyayı sil
 ```
 
@@ -180,8 +181,19 @@ dışa aktarılan raporlar dahil. `--lang tr` ya da penceredeki EN/TR anahtarı.
 
 ## Kurulum
 
-[Releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases) sayfasından zip'i indir, aç, klasörü
-`PATH`'e ekle. Kurulum yok, indirilecek runtime yok: çalıştırılabilir dosya kendi kendine yeter.
+[Releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases) sayfasından zip'i indir, istediğin
+yere aç ve şunu çalıştır:
+
+```console
+wymcmd install
+```
+
+İki dosyayı `%LOCALAPPDATA%\Programs\wymcmd` altına kopyalar, o klasörü PATH'e ekler ve başlat
+menüsüne kısayol koyar. Yönetici yok, kurulum sihirbazı yok; geri almak da `wymcmd uninstall`.
+Sonrasında yeni bir terminal aç, `wymcmd` her klasörde çalışır.
+
+Taşınabilir kalsın mı istiyorsun? Kurulumu atla, açtığın yerden çalıştır. Çalıştırılabilir dosya
+kendi kendine yeter, iki durumda da indirilecek bir runtime yok.
 
 Zip'in içinde birbirine ait iki dosya var:
 

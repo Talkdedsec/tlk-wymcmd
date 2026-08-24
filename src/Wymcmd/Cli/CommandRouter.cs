@@ -85,6 +85,7 @@ public static class CommandRouter
             "tree" => Commands.Tree.Run(rest),
             "kill" => Commands.Kill.Run(rest),
             "why" => Commands.WhyCommand.Run(rest),
+            "install" => Commands.Install.Run(rest),
             "sources" => Commands.Sources.Run(rest),
             "blackbox" => Commands.BlackBox.Run(rest),
             "service" => Commands.Service.Run(rest),
@@ -102,7 +103,7 @@ public static class CommandRouter
         ConsoleHost.Line();
         ConsoleHost.Strong(Loc.T("cli.commands_header"));
 
-        foreach (var name in new[] { "why", "timeline", "list", "watch", "trap", "tree", "kill", "rules", "blackbox", "sources", "export", "service", "doctor", "uninstall" })
+        foreach (var name in new[] { "why", "timeline", "list", "watch", "trap", "tree", "kill", "rules", "blackbox", "sources", "export", "service", "doctor", "install", "uninstall" })
             ConsoleHost.Line($"  {name,-10} {Loc.T("cli.cmd." + name)}");
 
         ConsoleHost.Line();

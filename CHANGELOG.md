@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.0 - unreleased
+## 0.1.1
+
+- `wymcmd install` copies both executables to `%LOCALAPPDATA%\Programs\wymcmd`, adds that folder
+  to the user PATH and drops a start menu shortcut, so `wymcmd` works from any prompt without
+  administrator rights. `wymcmd uninstall` takes it back out.
+
+## 0.1.0
 
 First working version.
 

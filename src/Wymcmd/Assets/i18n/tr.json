@@ -108,7 +108,8 @@
       "export": "yakalanan olayları dışa aktar",
       "service": "nöbet servisini kur veya yönet",
       "doctor": "neyin açık neyin eksik olduğunu kontrol et",
-      "uninstall": "wymcmd'nin sistemde bıraktığı her izi kaldır"
+      "uninstall": "wymcmd'nin sistemde bıraktığı her izi kaldır",
+      "install": "wymcmd'yi kalıcı bir yere kopyala ve PATH'e ekle"
     },
     "opt": {
       "lang": "çıktı dili (en, tr)",
@@ -246,7 +247,8 @@
     "removed": "{0}: kaldırıldı",
     "nothing": "kaldırılacak bir şey yok - bu makinede iz bırakılmamış",
     "done": "wymcmd geride iz bırakmadı",
-    "data_locked": "veri klasörü hâlâ kullanımda: {0}"
+    "data_locked": "veri klasörü hâlâ kullanımda: {0}",
+    "path_entry": "PATH kaydı ve kurulan kopya"
   },
   "trap": {
     "armed": "tuzak kuruldu: {0}  ·  süre {1}  ·  aksiyon: {2}",
@@ -274,5 +276,12 @@
     "images": "En çok başlatılan programlar",
     "hours": "Saate göre dağılım",
     "commands": "En çok tekrar eden konsol komutları"
+  },
+  "install": {
+    "done": "{0} klasörüne kuruldu",
+    "shortcut": "başlat menüsü kısayolu oluşturuldu",
+    "path_added": "PATH'e eklendi - yeni bir terminal aç ve sadece şunu yaz: wymcmd",
+    "path_already": "zaten PATH'te - yeni bir terminal aç ve şunu yaz: wymcmd",
+    "failed": "kurulamadı: {0}"
   }
 }

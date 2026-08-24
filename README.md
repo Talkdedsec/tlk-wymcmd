@@ -124,6 +124,7 @@ wymcmd blackbox on|off|status
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
+wymcmd install                  # put wymcmd on your PATH (per user, no administrator)
 wymcmd uninstall --purge        # revert every change, delete every file
 ```
 
@@ -184,9 +185,19 @@ text, error messages and exported reports. `--lang tr`, or the EN/TR switch in t
 
 ## Install
 
-Grab the zip from [releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases), unpack it, and put
-the folder on your `PATH`. Nothing to install, no runtime to fetch: the executable is
-self-contained.
+Grab the zip from [releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases), unpack it
+anywhere, and run:
+
+```console
+wymcmd install
+```
+
+That copies both files to `%LOCALAPPDATA%\Programs\wymcmd`, adds the folder to your PATH and
+puts a shortcut in the start menu. No administrator, no installer, nothing to uninstall later
+except `wymcmd uninstall`. Open a new terminal afterwards and `wymcmd` works from any folder.
+
+Prefer to keep it portable? Skip the install and run it from wherever you unpacked it. The
+executable is self-contained; there is no runtime to fetch either way.
 
 The zip holds two files that belong together:
 
