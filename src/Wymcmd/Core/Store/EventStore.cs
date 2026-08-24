@@ -32,9 +32,19 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
     private readonly CancellationTokenSource _shutdown = new();
     private readonly Task _writer;
 
+    /// <summary>
+    /// Counted by hand: an unbounded single-reader channel refuses to report its own Count,
+    /// and FlushAsync needs to know when the queue has actually drained.
+    /// </summary>
+    private int _pending;
+
+    /// <summary>Where this store keeps its data - the shared database unless told otherwise.</summary>
+    public string DatabasePath { get; }
+
     public EventStore(string? path = null)
     {
         var file = path ?? AppPaths.Database;
+        DatabasePath = file;
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         _connectionString = new SqliteConnectionStringBuilder
         {
@@ -48,13 +58,18 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         _writer = Task.Run(DrainAsync);
     }
 
-    public void Enqueue(ProcEvent evt) => _queue.Writer.TryWrite(evt);
-
-    public async Task FlushAsync()
+    public void Enqueue(ProcEvent evt)
     {
-        // Give the writer a moment to pick up whatever is queued.
-        for (var i = 0; i < 40 && _queue.Reader.Count > 0; i++)
-            await Task.Delay(25);
+        if (_queue.Writer.TryWrite(evt)) Interlocked.Increment(ref _pending);
+    }
+
+    /// <summary>Waits until everything queued so far has reached the database, or gives up.</summary>
+    public async Task FlushAsync(TimeSpan? timeout = null)
+    {
+        var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
+
+        while (Volatile.Read(ref _pending) > 0 && DateTime.UtcNow < deadline)
+            await Task.Delay(20);
     }
 
     private void Initialize()
@@ -107,6 +122,13 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         command.ExecuteNonQuery();
     }
 
+    private static void Vacuum(SqliteConnection connection)
+    {
+        using var vacuum = connection.CreateCommand();
+        vacuum.CommandText = "VACUUM";
+        vacuum.ExecuteNonQuery();
+    }
+
     /// <summary>A short-lived read connection for aggregate queries.</summary>
     internal SqliteConnection OpenRead() => Open();
 
@@ -138,7 +160,9 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
                     continue;
                 }
 
+                var written = batch.Count;
                 Write(batch);
+                Interlocked.Add(ref _pending, -written);
                 batch.Clear();
             }
             catch (OperationCanceledException)
@@ -148,6 +172,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
             catch (Exception ex)
             {
                 Diagnostics.Log.Warn("event store write failed: " + ex.Message);
+                Interlocked.Add(ref _pending, -batch.Count);
                 batch.Clear();
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
@@ -157,6 +182,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         if (batch.Count > 0)
         {
             try { Write(batch); } catch { /* shutting down */ }
+            Interlocked.Add(ref _pending, -batch.Count);
         }
     }
 
@@ -225,7 +251,16 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
             parameters["$risk_factors"].Value = evt.RiskFactors.Count == 0
                 ? DBNull.Value
                 : JsonSerializer.Serialize(evt.RiskFactors.Select(f => new { f.Key, f.Weight, f.Detail }));
-            parameters["$chain"].Value = evt.Chain.Count == 0 ? DBNull.Value : JsonSerializer.Serialize(evt.Chain);
+            parameters["$chain"].Value = evt.Chain.Count == 0
+                ? DBNull.Value
+                : JsonSerializer.Serialize(evt.Chain.Select(link => new AncestorLink
+                {
+                    Pid = link.Pid,
+                    ImageName = link.ImageName,
+                    ImagePath = link.ImagePath,
+                    StartTime = link.StartTime,
+                    Alive = link.Alive
+                }));
             parameters["$sha256"].Value = evt.Sha256 as object ?? DBNull.Value;
             command.ExecuteNonQuery();
         }
@@ -343,6 +378,32 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         }
     }
 
+    /// <summary>Drops the oldest slice of the table, used when the file outgrows its ceiling.</summary>
+    public int PruneOldest(double fraction)
+    {
+        fraction = Math.Clamp(fraction, 0.01, 0.5);
+
+        using var connection = Open();
+        using var count = connection.CreateCommand();
+        count.CommandText = "SELECT COUNT(*) FROM events";
+        var total = Convert.ToInt64(count.ExecuteScalar() ?? 0L);
+        if (total == 0) return 0;
+
+        var target = Math.Max(1, (long)(total * fraction));
+
+        using var delete = connection.CreateCommand();
+        delete.CommandText = """
+            DELETE FROM events WHERE id IN (
+                SELECT id FROM events ORDER BY start_time ASC LIMIT $take
+            )
+            """;
+        delete.Parameters.AddWithValue("$take", target);
+        var removed = delete.ExecuteNonQuery();
+
+        if (removed > 0) Vacuum(connection);
+        return removed;
+    }
+
     public int Prune(TimeSpan keepFor)
     {
         using var connection = Open();
@@ -351,12 +412,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         command.Parameters.AddWithValue("$cutoff", Stamp(DateTime.Now - keepFor));
         var removed = command.ExecuteNonQuery();
 
-        if (removed > 0)
-        {
-            using var vacuum = connection.CreateCommand();
-            vacuum.CommandText = "VACUUM";
-            vacuum.ExecuteNonQuery();
-        }
+        if (removed > 0) Vacuum(connection);
         return removed;
     }
 

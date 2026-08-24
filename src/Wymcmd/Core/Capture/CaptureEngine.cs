@@ -55,6 +55,8 @@ public sealed class CaptureEngine : IAsyncDisposable
         _tree.Seed();
         Log.Info($"process tree seeded with {_tree.Count} records");
 
+        Maintenance.RunInBackground(_store);
+
         _collector = SelectCollector();
         _collector.Started += OnStarted;
         _collector.Stopped += OnStopped;

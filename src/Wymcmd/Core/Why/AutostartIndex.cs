@@ -32,6 +32,16 @@ public sealed class AutostartIndex
 
     public DateTime BuiltAt => _builtAt;
 
+    /// <summary>Replaces the index with a known set - used by tests and by offline analysis.</summary>
+    public void Seed(IEnumerable<AutostartEntry> entries)
+    {
+        lock (_sync)
+        {
+            _entries = entries.ToList();
+            _builtAt = DateTime.Now;
+        }
+    }
+
     public void EnsureFresh(TimeSpan? maxAge = null)
     {
         if (DateTime.Now - _builtAt < (maxAge ?? DefaultMaxAge)) return;
