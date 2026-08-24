@@ -53,6 +53,10 @@ jobs:
           & $wymcmd doctor --lang en
           if ($LASTEXITCODE -notin @(0, 3)) { throw "doctor returned $LASTEXITCODE" }
 
+          # doctor legitimately exits 3 here (a bare runner has most sources off), and the shell
+          # would carry that straight into the step result.
+          exit 0
+
       - name: Package
         shell: pwsh
         run: |
