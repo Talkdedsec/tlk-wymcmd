@@ -182,17 +182,32 @@ text, error messages and exported reports. `--lang tr`, or the EN/TR switch in t
   <img src="docs/img/gui-tr.png" alt="The same window in Turkish" width="920">
 </p>
 
+## Install
+
+Grab the zip from [releases](https://github.com/Talkdedsec1/wymcmd/releases), unpack it, and put
+the folder on your `PATH`. Nothing to install, no runtime to fetch: the executable is
+self-contained.
+
+The zip holds two files that belong together:
+
+| File | What it is |
+|---|---|
+| `wymcmd.exe` | The tool. Double-click it for the window. |
+| `wymcmd.com` | A 1 MB console launcher. Windows shells resolve `.com` before `.exe`, so typing `wymcmd list` runs this, which waits for the tool to finish and passes its exit code back. Without it a shell would return the prompt immediately and your redirection would race the output. |
+
 ## Build from source
 
-Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download). The launcher is compiled
+ahead of time, which needs the Visual Studio C++ build tools; skip that step if you only want
+the window.
 
 ```console
 git clone https://github.com/Talkdedsec1/wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
+dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
+copy launcher\wymcmd-launcher.exe publish\wymcmd.com
 ```
-
-The result is a single self-contained `publish\wymcmd.exe`. Put it anywhere on your `PATH`.
 
 Repository layout: `src/Wymcmd/Core` holds capture, forensics, attribution, rules and storage;
 `Cli` and `Views`/`ViewModels` are two front ends over the same engine; `scripts/` carries the

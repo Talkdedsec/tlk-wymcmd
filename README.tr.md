@@ -178,18 +178,30 @@ yaptıklarını — bir günlük tutuyor), kara kutuyu ve kaydını kaldırır, 
 Kaynak dil İngilizce, Türkçe tam çeviri — pencere, CLI çıktısı, yardım metni, hata mesajları ve
 dışa aktarılan raporlar dahil. `--lang tr` ya da penceredeki EN/TR anahtarı.
 
+## Kurulum
+
+[Releases](https://github.com/Talkdedsec1/wymcmd/releases) sayfasından zip'i indir, aç, klasörü
+`PATH`'e ekle. Kurulum yok, indirilecek runtime yok: çalıştırılabilir dosya kendi kendine yeter.
+
+Zip'in içinde birbirine ait iki dosya var:
+
+| Dosya | Ne işe yarıyor |
+|---|---|
+| `wymcmd.exe` | Aracın kendisi. Çift tıklarsan pencere açılır. |
+| `wymcmd.com` | 1 MB'lık konsol başlatıcısı. Windows kabukları `.com` uzantısını `.exe`'den önce çözer; `wymcmd list` yazdığında bu çalışır, aracın bitmesini bekler ve çıkış kodunu geri verir. O olmadan kabuk komut istemini hemen döndürür ve yönlendirdiğin çıktı yarışa girer. |
+
 ## Kaynaktan derleme
 
-[.NET 10 SDK](https://dotnet.microsoft.com/download) gerekir.
+[.NET 10 SDK](https://dotnet.microsoft.com/download) gerekir. Başlatıcı önceden derlendiği için
+Visual Studio C++ build tools ister; yalnız pencereyi istiyorsan o adımı atlayabilirsin.
 
 ```console
 git clone https://github.com/Talkdedsec1/wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
+dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
+copy launcher\wymcmd-launcher.exe publish\wymcmd.com
 ```
-
-Sonuç tek dosyalık, kendi kendine yeten bir `publish\wymcmd.exe`. `PATH` üzerinde herhangi bir
-yere koy.
 
 Depo düzeni: `src/Wymcmd/Core` yakalama, adli katman, atıf, kurallar ve depolamayı barındırır;
 `Cli` ile `Views`/`ViewModels` aynı motorun iki yüzüdür; `scripts/` çeviri kapısını, senaryo

@@ -18,6 +18,7 @@ First working version.
 - WPF interface, tray notifications and a CLI sharing one executable
 - English and Turkish throughout, including CLI output and reports
 - Setup that reverts itself: wymcmd uninstall --purge
+- wymcmd.com, a small console launcher, so shells wait for the tool and see its exit code
 
 Verified on Windows 11 26200:
 - ETW capture: 500/500 and 300/300 short-lived cmd.exe launches recorded, command lines intact

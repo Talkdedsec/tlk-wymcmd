@@ -29,16 +29,28 @@ jobs:
       - name: Publish single file
         run: dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 
+      - name: Publish console launcher
+        shell: pwsh
+        run: |
+          dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
+          Copy-Item launcher/wymcmd-launcher.exe publish/wymcmd.com
+
       - name: Smoke test
         shell: pwsh
         run: |
-          $exe = "publish/wymcmd.exe"
-          & $exe --version
+          # Always through the launcher: the windowed executable does not block a shell,
+          # which is exactly the behaviour the launcher exists to fix.
+          $wymcmd = "publish/wymcmd.com"
+
+          $version = & $wymcmd --version
           if ($LASTEXITCODE -ne 0) { throw "version check failed" }
-          & $exe help --lang en | Out-Null
-          & $exe help --lang tr | Out-Null
+          if ($version -notmatch '^wymcmd \d+\.\d+\.\d+$') { throw "unexpected version output: $version" }
+
+          & $wymcmd help --lang en | Out-Null
+          & $wymcmd help --lang tr | Out-Null
+
           # doctor reports missing sources on a bare runner, which is exit code 3
-          & $exe doctor --lang en
+          & $wymcmd doctor --lang en
           if ($LASTEXITCODE -notin @(0, 3)) { throw "doctor returned $LASTEXITCODE" }
 
       - name: Package
@@ -47,7 +59,7 @@ jobs:
           $version = "${{ github.ref_name }}" -replace '^v', ''
           if (-not $version) { $version = "dev" }
           New-Item -ItemType Directory -Path package | Out-Null
-          Copy-Item publish/wymcmd.exe package/
+          Copy-Item publish/wymcmd.exe, publish/wymcmd.com package/
           Copy-Item README.md, README.tr.md, LICENSE, CHANGELOG.md package/
           Compress-Archive -Path package/* -DestinationPath "wymcmd-$version-win-x64.zip"
           $hash = (Get-FileHash "wymcmd-$version-win-x64.zip" -Algorithm SHA256).Hash
@@ -62,6 +74,7 @@ jobs:
           name: wymcmd
           path: |
             publish/wymcmd.exe
+            publish/wymcmd.com
             wymcmd-*.zip
             *.sha256
 
@@ -73,5 +86,6 @@ jobs:
           generate_release_notes: false
           files: |
             publish/wymcmd.exe
+            publish/wymcmd.com
             wymcmd-*.zip
             *.sha256
