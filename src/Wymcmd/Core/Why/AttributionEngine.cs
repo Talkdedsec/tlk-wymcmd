@@ -43,6 +43,12 @@ public sealed class AttributionEngine(AutostartIndex index)
         "wusa.exe", "winget.exe", "choco.exe"
     };
 
+    /// <summary>Processes that host the Task Scheduler service and therefore start tasks.</summary>
+    private static readonly HashSet<string> ScheduleHosts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "svchost.exe", "taskeng.exe", "taskhostw.exe"
+    };
+
     private static readonly HashSet<string> RemoteAccess = new(StringComparer.OrdinalIgnoreCase)
     {
         "sshd.exe", "winrshost.exe", "wsmprovhost.exe", "psexesvc.exe", "rundll32.exe.tsclient"
@@ -66,7 +72,11 @@ public sealed class AttributionEngine(AutostartIndex index)
         if (string.IsNullOrEmpty(parentName)) return null;
 
         // The scheduler names the task and the pid it started, which beats every heuristic below.
-        if (TaskLaunchIndex.Find(evt.Pid, evt.ParentPid, evt.StartTime) is { } launch)
+        var scheduled = ScheduleHosts.Contains(parentName)
+            ? TaskLaunchIndex.FindFresh(evt.Pid, evt.ParentPid, evt.StartTime, evt.ImageName)
+            : TaskLaunchIndex.Find(evt.Pid, evt.ParentPid, evt.StartTime, evt.ImageName);
+
+        if (scheduled is { } launch)
         {
             return new LaunchSource
             {

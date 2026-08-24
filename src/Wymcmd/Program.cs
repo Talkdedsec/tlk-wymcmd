@@ -18,9 +18,12 @@ public static class Program
             return 0;
         }
 
-        if (args.Length == 0)
+        // No command, only flags: still the window, but "wymcmd --lang en" picks its language.
+        // --help and --version stay on the command line where they belong.
+        var options = new CliOptions(args);
+        if (args.All(argument => argument.StartsWith('-')) && !options.Help && !options.Has("--version"))
         {
-            Loc.Use(Loc.DetectSystemLanguage());
+            Loc.Use(options.Value("--lang") ?? Loc.DetectSystemLanguage());
             return Gui.Shell.Run();
         }
 

@@ -51,6 +51,7 @@ public static class CommandRouter
         var command = args.FirstOrDefault(a => !a.StartsWith('-'))?.ToLowerInvariant() ?? "help";
         var rest = new CliOptions(args.SkipWhile(a => !a.Equals(command, StringComparison.OrdinalIgnoreCase)).Skip(1).ToArray());
 
+        if (options.Has("--version") && command is "help" or "") return Version();
         if (options.Help && command is "help" or "") { Usage(); return ExitOk; }
 
         return command switch
