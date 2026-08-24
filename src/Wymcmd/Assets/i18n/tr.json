@@ -138,7 +138,13 @@
     "prefetch": "Prefetch",
     "database": "olay veritabanı",
     "hint_enable": "eksikleri açmak için: wymcmd sources enable",
-    "task_log": "Görev Zamanlayıcı işlem günlüğü"
+    "task_log": "Görev Zamanlayıcı işlem günlüğü",
+    "detail": {
+      "needs_admin": "yönetici hakkı gerekiyor",
+      "no_events": "henüz olay yok",
+      "installed": "kurulu",
+      "database": "{0} KB, {1} olay, {2:g} - {3:g}"
+    }
   },
   "list": {
     "count": "{0} olay"
