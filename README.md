@@ -152,10 +152,18 @@ its coverage stopped rather than claiming it was watching a switched-off compute
 wymcmd coverage --last 7d
 ```
 
-That prints the stretches that were recorded, and the gaps between them. `wymcmd why` says it out
-loud too: an explanation for a moment inside a gap is marked as rebuilt from what Windows kept,
-not read back from a recording. The black box closes most gaps on its own, because Windows starts
-it at boot without anything of ours running.
+That prints the stretches that were recorded and, separately, the stretches that are actually
+blind. The two are not the same: an hour with no recording only counts against you if the machine
+was up for it, and Windows writes both power transitions to the System log where any user can read
+them. A laptop shut for the weekend was not unwatched, and the percentage is measured against the
+time the machine was actually on.
+
+The black box counts as a watcher — Windows starts it at boot with nothing of ours running, so it
+covers the stretches where the window was closed. Its reach is read back from how far the trace
+still goes, not from when the session was created, because the file is circular and wraps.
+
+`wymcmd why` says it out loud too: an explanation for a moment nothing was recording is marked as
+rebuilt from what Windows kept, not read back from a recording.
 
 ## Rules
 

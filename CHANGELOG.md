@@ -2,12 +2,19 @@
 
 ## Unreleased
 
-- **Coverage.** The tool now records when something was actually watching, and closes each stretch
-  with a heartbeat, so a session that ended with the machine losing power knows where its coverage
+- **Coverage.** The tool records when something was actually watching and closes each stretch with
+  a heartbeat, so a session that ended with the machine losing power knows where its coverage
   really stopped instead of claiming it watched a switched-off computer. `wymcmd coverage` prints
-  the recorded stretches and the gaps between them, the window shows the same summary, and
-  `wymcmd why` marks an explanation for a moment inside a gap as rebuilt from what Windows kept
-  rather than read back from a recording.
+  the recorded stretches, the window carries the same summary, and `wymcmd why` marks an
+  explanation for a moment nothing was recording as rebuilt from what Windows kept.
+- Coverage separates **blind** from **off**. An hour with no recording only counts against you if
+  the machine was up for it, read from the power transitions Windows writes to the System log —
+  which needs neither elevation nor any audit policy. The percentage is measured against the time
+  the machine was actually on.
+- The **black box counts as a watcher**, since Windows starts it at boot with nothing of ours
+  running. How far back it reaches is read from the oldest event the trace still holds rather than
+  from when the session was created, because the file is circular and wraps.
+- The rules file no longer has a second copy of every enabled rule written into it.
 
 ## 0.2.1
 

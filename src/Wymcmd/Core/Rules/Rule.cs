@@ -110,6 +110,9 @@ public sealed class RuleSet
 
     public List<Rule> Rules { get; set; } = [];
 
+    /// <summary>A view over Rules, not state - writing it to the file put a second copy of every
+    /// enabled rule in there, which then had to be read back and thrown away.</summary>
+    [JsonIgnore]
     public IEnumerable<Rule> Ordered => Rules.Where(r => r.Enabled).OrderBy(r => r.Priority);
 
     /// <summary>First matching rule wins; an allow rule stops everything after it.</summary>

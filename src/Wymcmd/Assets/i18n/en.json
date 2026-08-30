@@ -155,19 +155,22 @@
   "coverage": {
     "title": "wymcmd coverage",
     "window": "window   {0:g} - {1:g}",
-    "watched": "watched  {0} of it, {1}%",
+    "machine_up": "machine   up for {0} of it",
+    "watched_of_up": "watched   {0}, {1}% of the time it was up",
+    "blind_header": "blind ({0}) - the machine was up and nothing was recording",
+    "off_total": "the machine was off or asleep for {0} of this window",
     "blackbox_on": "black box on, so boots and reboots are recorded too",
     "blackbox_off": "black box off - nothing is recorded while wymcmd is closed",
     "never": "nothing has ever recorded on this machine",
     "spans_header": "watched",
-    "gaps_header": "gaps ({0})",
     "gap_hint": "launches inside a gap can still be explained, but from what Windows kept rather than from a recording",
     "not_watched": "nothing was recording at that moment - this was rebuilt from what Windows kept",
-    "summary": "{0} of the last 7 days watched, {1} gaps",
+    "summary": "last 7 days: {0} recorded, {1}% of the time this machine was up, {2} blind stretches",
     "now": "now",
     "kind": {
       "live": "window",
-      "service": "service"
+      "service": "service",
+      "blackbox": "black box"
     }
   },
   "list": {

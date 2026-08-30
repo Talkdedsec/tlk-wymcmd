@@ -30,6 +30,72 @@ public static class BlackBoxReader
         return Merge(results);
     }
 
+    /// <summary>
+    /// How far back the recorder can still answer for. The traces are circular, so the session
+    /// start is not the answer once a file has wrapped - the oldest event it still holds is. Only
+    /// the first buffer is read, which is why this is cheap enough to ask on every refresh.
+    /// </summary>
+    public static (DateTime From, DateTime To)? RetainedRange(string? tracePath = null)
+    {
+        (DateTime From, DateTime To)? widest = null;
+
+        foreach (var path in tracePath is null
+                     ? new[] { AppPaths.BlackBoxTrace, AppPaths.BlackBoxSystemTrace }
+                     : [tracePath])
+        {
+            if (RangeOf(path) is not { } range) continue;
+            widest = widest is null
+                ? range
+                : (range.From < widest.Value.From ? range.From : widest.Value.From,
+                   range.To > widest.Value.To ? range.To : widest.Value.To);
+        }
+
+        return widest;
+    }
+
+    private static (DateTime From, DateTime To)? RangeOf(string path)
+    {
+        if (!File.Exists(path)) return null;
+
+        var snapshot = Path.Combine(Path.GetTempPath(),
+            $"wymcmd-range-{Path.GetFileNameWithoutExtension(path)}-{Environment.ProcessId}.etl");
+
+        try
+        {
+            File.Copy(path, snapshot, overwrite: true);
+
+            using var source = new ETWTraceEventSource(snapshot);
+            DateTime? oldest = null;
+
+            source.AllEvents += data =>
+            {
+                if (oldest is not null) return;
+                oldest = data.TimeStamp;
+                source.StopProcessing();
+            };
+
+            source.Process();
+            if (oldest is not { } first) return null;
+
+            // SessionEndTime is only filled in once the whole file has been read, and reading a
+            // wrapped 32 MB trace to learn when it last wrote is not worth it. The session flushes
+            // as it records, so the file's own timestamp is the end, and it cannot be in the future.
+            var end = File.GetLastWriteTime(path);
+            if (end > DateTime.Now) end = DateTime.Now;
+
+            return end > first ? (first, end) : null;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"{Path.GetFileName(path)} range unreadable: {ex.Message}");
+            return null;
+        }
+        finally
+        {
+            try { File.Delete(snapshot); } catch { /* temp file */ }
+        }
+    }
+
     private static List<ProcEvent> ReadOne(string path, DateTime from, DateTime to)
     {
         var results = new List<ProcEvent>();
