@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Coverage.** The tool records when something was actually watching and closes each stretch with
   a heartbeat, so a session that ended with the machine losing power knows where its coverage

@@ -112,7 +112,12 @@ that change the machine, both are explicit, and `wymcmd uninstall --purge` puts 
 - **Whether this binary is a regular here** — Prefetch gives the run count and the last eight
   run times, BAM the exact last run, AmCache the day this machine first catalogued the file and
   its SHA-1
+- **Where it reached** — the connections and DNS queries Sysmon recorded for that process while
+  it was alive. Only Sysmon records this per process; without it the section is simply absent
 - **How worried to be** — a 0-100 score that always shows its reasons
+- **What to call it** — the MITRE ATT&CK techniques the evidence already establishes, so a launch
+  can be looked up, matched against a detection rule or pasted into a ticket. Nothing is inferred:
+  a technique appears only where the finding behind it is in hand
 
 ## Commands
 

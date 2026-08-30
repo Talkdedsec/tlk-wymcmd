@@ -112,7 +112,12 @@ Arkandan hiçbir şey açılmıyor: makineyi değiştiren tek iki komut `sources
 - **Bu dosya burada tanıdık mı** — Prefetch çalıştırma sayısını ve son sekiz çalışmayı, BAM tam
   son çalışma zamanını, AmCache ise dosyanın bu makinede ilk görüldüğü günü ve SHA-1'ini verir.
   "Her sabah çalışıyor" ile "yirmi dakika önce belirdi" ayrı cevaplardır
+- **Nereye uzandı** — Sysmon'un o süreç için kaydettiği bağlantılar ve DNS sorguları. Bunu süreç
+  bazında yalnız Sysmon kaydeder; yoksa bölüm hiç görünmez
 - **Ne kadar endişelenmeli** — 0-100 arası skor, ama her zaman gerekçeleri açık
+- **Adı ne** — kanıtı zaten elde olan MITRE ATT&CK teknikleri; açılış aranabilsin, bir tespit
+  kuralıyla eşleştirilebilsin, ticket'a yapıştırılabilsin diye. Tahmin yok: teknik ancak
+  arkasındaki bulgu elde olduğunda çıkar
 
 ## Komutlar
 
