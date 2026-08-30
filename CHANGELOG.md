@@ -14,6 +14,11 @@
 - The **black box counts as a watcher**, since Windows starts it at boot with nothing of ours
   running. How far back it reaches is read from the oldest event the trace still holds rather than
   from when the session was created, because the file is circular and wraps.
+- **ATT&CK technique names.** `wymcmd why` and `--json` now label a launch with the MITRE
+  techniques the evidence already establishes - the scheduled task it read out of the task store,
+  the encoded command it decoded, the interpreter that actually ran. Nothing is inferred and
+  nothing is scored: it names findings in a vocabulary a security reader already has, so a launch
+  can be looked up, matched against a detection rule or pasted into a ticket.
 - The rules file no longer has a second copy of every enabled rule written into it.
 
 ## 0.2.1

@@ -202,6 +202,7 @@
     "evidence": "evidence",
     "chain": "ancestry",
     "risk": "risk",
+    "attack": "ATT&CK",
     "history": "execution history"
   },
   "gui": {

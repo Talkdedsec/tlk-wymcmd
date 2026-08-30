@@ -69,6 +69,14 @@ public static class EventFormatter
                 ConsoleHost.Line($"  +{factor.Weight,-3} {Loc.T("risk." + factor.Key)}{detail}");
             }
         }
+
+        var techniques = AttackMap.For(evt);
+        if (techniques.Count == 0) return;
+
+        ConsoleHost.Line();
+        ConsoleHost.Strong(Loc.T("why.attack"));
+        foreach (var technique in techniques)
+            ConsoleHost.Line($"  {technique.Id,-12} {technique.Name}");
     }
 
     public static string Json(ProcEvent evt) => Core.Store.Exporter.Json(evt);
