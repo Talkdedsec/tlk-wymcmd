@@ -199,7 +199,7 @@ dışa aktarılan raporlar dahil. `--lang tr` ya da penceredeki EN/TR anahtarı.
 
 ## Kurulum
 
-[Releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases) sayfasından zip'i indir, istediğin
+[Releases](https://github.com/Talkdedsec/tlk-wymcmd/releases) sayfasından zip'i indir, istediğin
 yere aç ve şunu çalıştır:
 
 ```console
@@ -235,7 +235,7 @@ Visual Studio C++ build tools ister ve derleyici `vswhere.exe`'yi PATH'te bekler
 atlayabilirsin.
 
 ```console
-git clone https://github.com/Talkdedsec1/tlk-wymcmd
+git clone https://github.com/Talkdedsec/tlk-wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher

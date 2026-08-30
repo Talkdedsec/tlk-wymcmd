@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security issue
-    url: https://github.com/Talkdedsec1/tlk-wymcmd/blob/main/SECURITY.md
+    url: https://github.com/Talkdedsec/tlk-wymcmd/blob/main/SECURITY.md
     about: How to report something that lets wymcmd kill or elevate more than it should

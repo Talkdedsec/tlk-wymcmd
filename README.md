@@ -203,7 +203,7 @@ text, error messages and exported reports. `--lang tr`, or the EN/TR switch in t
 
 ## Install
 
-Grab the zip from [releases](https://github.com/Talkdedsec1/tlk-wymcmd/releases), unpack it
+Grab the zip from [releases](https://github.com/Talkdedsec/tlk-wymcmd/releases), unpack it
 anywhere, and run:
 
 ```console
@@ -239,7 +239,7 @@ ahead of time, which needs the Visual Studio C++ build tools, and that compiler 
 if you only want the window.
 
 ```console
-git clone https://github.com/Talkdedsec1/tlk-wymcmd
+git clone https://github.com/Talkdedsec/tlk-wymcmd
 cd wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
