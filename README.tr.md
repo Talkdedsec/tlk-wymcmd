@@ -152,10 +152,18 @@ biliyor; kapalı bir bilgisayarı izlediğini iddia etmiyor.
 wymcmd coverage --last 7d
 ```
 
-Kaydedilen aralıkları ve aralarındaki boşlukları yazar. `wymcmd why` de bunu söyler: boşluğa denk
-gelen bir açıklama, kayıttan okunmuş değil Windows'un tuttuklarından yeniden kurulmuş olarak
-işaretlenir. Boşlukların çoğunu kara kutu kapatır, çünkü onu Windows açılışta kendisi başlatıyor
-ve bizden hiçbir şey çalışmıyor.
+Kaydedilen aralıkları ve ayrıca gerçekten kör olan aralıkları yazar. İkisi aynı şey değil: kayıt
+olmayan bir saat ancak makine o sırada açıksa aleyhine sayılır, Windows da açılış/uyku geçişlerini
+System günlüğüne yazıyor ve orayı her kullanıcı okuyabiliyor. Hafta sonu kapalı duran bir dizüstü
+izlenmemiş sayılmaz; yüzde, makinenin gerçekten açık olduğu süreye göre hesaplanır.
+
+Kara kutu da bir izleyici sayılır — Windows onu açılışta kendisi başlatıyor ve bizden hiçbir şey
+çalışmıyor, yani pencere kapalıyken geçen süreyi o kapatıyor. Ne kadar geriye yettiği, oturumun ne
+zaman kurulduğundan değil izin gerçekte nereye kadar uzandığından okunuyor; dosya döngüsel ve başa
+sarıyor.
+
+`wymcmd why` de bunu söyler: hiçbir şeyin kayıt yapmadığı bir ana ait açıklama, kayıttan okunmuş
+değil Windows'un tuttuklarından yeniden kurulmuş olarak işaretlenir.
 
 ## Kurallar
 

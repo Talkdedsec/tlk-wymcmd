@@ -57,7 +57,7 @@ public static class WhyCommand
     {
         try
         {
-            if (new WatchLedger().Covered(evt.StartTime)) return;
+            if (Core.Coverage.CoverageReport.Covered(evt.StartTime)) return;
 
             ConsoleHost.Line();
             ConsoleHost.Dim(Loc.T("coverage.not_watched"));

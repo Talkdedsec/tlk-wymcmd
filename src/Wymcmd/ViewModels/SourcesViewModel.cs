@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Wymcmd.Core.Coverage;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Service;
 using Wymcmd.Core.Setup;
@@ -83,14 +84,14 @@ public sealed partial class SourcesViewModel : ObservableObject
         try
         {
             var to = DateTime.Now;
-            var from = to.AddDays(-7);
+            var report = CoverageReport.Build(to.AddDays(-7), to);
 
-            var ledger = new WatchLedger();
-            var spans = ledger.Spans(from, to);
-            if (spans.Count == 0) return Loc.T("coverage.never");
-
-            var watched = spans.Aggregate(TimeSpan.Zero, (total, s) => total + (s.To - s.From));
-            return Loc.T("coverage.summary", Loc.Duration(watched), ledger.Gaps(from, to).Count);
+            return report.Spans.Count == 0
+                ? Loc.T("coverage.never")
+                : Loc.T("coverage.summary",
+                    Loc.Duration(report.Watched),
+                    (int)Math.Round(report.Share * 100),
+                    report.Blind.Count);
         }
         catch (Exception ex)
         {

@@ -1,13 +1,11 @@
 using System.Text.Json;
 using Wymcmd.Core.Localization;
-using Wymcmd.Core.Setup;
-using Wymcmd.Core.Store;
 
 namespace Wymcmd.Cli.Commands;
 
 /// <summary>
-/// When something was watching, and when nothing was. An answer that lands in a gap was pieced
-/// together from what Windows happened to keep, and the difference matters enough to print.
+/// When something was recording, and when nothing was. An answer that lands in a blind stretch
+/// was pieced together from what Windows happened to keep, and the difference is worth printing.
 /// </summary>
 public static class Coverage
 {
@@ -16,25 +14,28 @@ public static class Coverage
         var to = DateTime.Now;
         var from = to - List.ParseSpan(options.Value("--last") ?? "7d");
 
-        var ledger = new WatchLedger();
-        var spans = ledger.Spans(from, to);
-        var gaps = ledger.Gaps(from, to);
-
-        var watched = spans.Aggregate(TimeSpan.Zero, (total, s) => total + (s.To - s.From));
-        var share = (to - from).TotalSeconds > 0 ? watched.TotalSeconds / (to - from).TotalSeconds : 0;
-        var blackBox = BlackBoxInstaller.IsInstalled() && BlackBoxInstaller.IsEnabled() != false;
+        var report = Core.Coverage.CoverageReport.Build(from, to);
+        var blind = report.Blind;
+        var off = report.Gaps.Where(g => !g.MachineWasUp).Aggregate(TimeSpan.Zero, (t, g) => t + g.Length);
 
         if (options.Json)
         {
             ConsoleHost.Line(JsonSerializer.Serialize(new
             {
-                from,
-                to,
-                watchedSeconds = (long)watched.TotalSeconds,
-                share = Math.Round(share, 4),
-                blackBox,
-                spans = spans.Select(s => new { kind = s.Kind.ToString(), from = s.From, to = s.To, open = s.Open }),
-                gaps = gaps.Select(g => new { from = g.From, to = g.To })
+                from = report.From,
+                to = report.To,
+                watchedSeconds = (long)report.Watched.TotalSeconds,
+                machineUpSeconds = (long)report.MachineUp.TotalSeconds,
+                share = Math.Round(report.Share, 4),
+                blackBox = report.BlackBoxOn,
+                spans = report.Spans.Select(s => new
+                {
+                    kind = s.Kind.ToString(),
+                    from = s.From,
+                    to = s.To,
+                    open = s.Open
+                }),
+                blind = blind.Select(g => new { from = g.From, to = g.To })
             }));
 
             return CommandRouter.ExitOk;
@@ -43,30 +44,42 @@ public static class Coverage
         ConsoleHost.Strong(Loc.T("coverage.title"));
         ConsoleHost.Line();
         ConsoleHost.Line("  " + Loc.T("coverage.window", from, to));
-        ConsoleHost.Line("  " + Loc.T("coverage.watched", Loc.Duration(watched), (int)Math.Round(share * 100)));
-        ConsoleHost.Line("  " + Loc.T(blackBox ? "coverage.blackbox_on" : "coverage.blackbox_off"));
+        ConsoleHost.Line("  " + Loc.T("coverage.machine_up", Loc.Duration(report.MachineUp)));
+        ConsoleHost.Line("  " + Loc.T("coverage.watched_of_up",
+            Loc.Duration(report.Watched), (int)Math.Round(report.Share * 100)));
+        ConsoleHost.Line("  " + Loc.T(report.BlackBoxOn ? "coverage.blackbox_on" : "coverage.blackbox_off"));
         ConsoleHost.Line();
 
-        if (spans.Count == 0)
+        if (report.Spans.Count == 0)
         {
             ConsoleHost.Dim(Loc.T("coverage.never"));
             return CommandRouter.ExitOk;
         }
 
         ConsoleHost.Strong(Loc.T("coverage.spans_header"));
-        foreach (var span in spans)
+        foreach (var span in report.Spans)
         {
             var kind = Loc.T("coverage.kind." + span.Kind.ToString().ToLowerInvariant());
             var ends = span.Open ? Loc.T("coverage.now") : When(span.To);
             ConsoleHost.Line($"{"  " + When(span.From) + " - " + ends,-44} {ConsoleHost.Color(kind, 90)}");
         }
 
-        if (gaps.Count == 0) return CommandRouter.ExitOk;
+        if (blind.Count > 0)
+        {
+            ConsoleHost.Line();
+            ConsoleHost.Strong(Loc.T("coverage.blind_header", blind.Count));
 
-        ConsoleHost.Line();
-        ConsoleHost.Strong(Loc.T("coverage.gaps_header", gaps.Count));
-        foreach (var gap in gaps)
-            ConsoleHost.Line($"  {When(gap.From)} - {When(gap.To)}  {ConsoleHost.Color(Loc.Duration(gap.To - gap.From), 90)}");
+            foreach (var gap in blind)
+                ConsoleHost.Line($"  {When(gap.From)} - {When(gap.To)}  {ConsoleHost.Color(Loc.Duration(gap.Length), 90)}");
+        }
+
+        if (off > TimeSpan.FromMinutes(1))
+        {
+            ConsoleHost.Line();
+            ConsoleHost.Dim(Loc.T("coverage.off_total", Loc.Duration(off)));
+        }
+
+        if (blind.Count == 0) return CommandRouter.ExitOk;
 
         ConsoleHost.Line();
         ConsoleHost.Dim(Loc.T("coverage.gap_hint"));

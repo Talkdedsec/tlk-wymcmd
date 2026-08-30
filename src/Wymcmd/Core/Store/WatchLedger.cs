@@ -2,7 +2,12 @@ using Microsoft.Data.Sqlite;
 
 namespace Wymcmd.Core.Store;
 
-public enum WatchKind { Live = 0, Service = 1 }
+/// <summary>
+/// Live and Service are written to the table. BlackBox never is - the recorder leaves no session
+/// behind because nothing of ours is running while it records; its coverage is read back from the
+/// trace instead.
+/// </summary>
+public enum WatchKind { Live = 0, Service = 1, BlackBox = 2 }
 
 /// <summary>A stretch of time something was actually recording. Open means it still is.</summary>
 public sealed record WatchSpan(WatchKind Kind, DateTime From, DateTime To, bool Open);
@@ -131,7 +136,7 @@ public sealed class WatchLedger
             }
         }
 
-        return Merge(raw);
+        return MergeSpans(raw);
     }
 
     /// <summary>
@@ -159,7 +164,7 @@ public sealed class WatchLedger
         => Spans(moment.AddSeconds(-1), moment.AddSeconds(1)).Any(s => s.From <= moment && moment <= s.To);
 
     /// <summary>Two watchers running at once is one covered stretch, not two.</summary>
-    private static List<WatchSpan> Merge(List<WatchSpan> spans)
+    public static List<WatchSpan> MergeSpans(List<WatchSpan> spans)
     {
         var merged = new List<WatchSpan>();
 

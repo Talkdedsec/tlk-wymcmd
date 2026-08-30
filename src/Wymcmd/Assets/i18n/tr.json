@@ -155,19 +155,22 @@
   "coverage": {
     "title": "wymcmd kapsam",
     "window": "aralık   {0:g} - {1:g}",
-    "watched": "izlenen  {0}, %{1}",
+    "machine_up": "makine    bunun {0} kadarında açıktı",
+    "watched_of_up": "izlenen   {0}, açık olduğu sürenin %{1}'i",
+    "blind_header": "kör ({0}) - makine açıktı ve hiçbir şey kayıt yapmıyordu",
+    "off_total": "makine bu aralığın {0} kadarında kapalı ya da uykudaydı",
     "blackbox_on": "kara kutu açık, açılışlar ve yeniden başlatmalar da kayıtta",
     "blackbox_off": "kara kutu kapalı - wymcmd kapalıyken hiçbir şey kaydedilmiyor",
     "never": "bu makinede hiç kayıt yapılmamış",
     "spans_header": "izlenen",
-    "gaps_header": "boşluk ({0})",
     "gap_hint": "boşluğa denk gelen açılışlar yine açıklanabilir, ama kayıttan değil Windows'un tuttuklarından",
     "not_watched": "o anda hiçbir şey kayıt yapmıyordu - bu, Windows'un tuttuklarından yeniden kuruldu",
-    "summary": "son 7 günün {0} kadarı izlendi, {1} boşluk",
+    "summary": "son 7 gün: {0} kayıt, makinenin açık olduğu sürenin %{1}'i, {2} kör aralık",
     "now": "şimdi",
     "kind": {
       "live": "pencere",
-      "service": "servis"
+      "service": "servis",
+      "blackbox": "kara kutu"
     }
   },
   "list": {
