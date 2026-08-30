@@ -44,8 +44,28 @@ public static class WhyCommand
         }
 
         EventFormatter.Detail(evt);
+        PrintCoverage(evt);
         PrintHistory(evt);
         return CommandRouter.ExitOk;
+    }
+
+    /// <summary>
+    /// Whether this was watched happen or reconstructed afterwards. Both answers are useful and
+    /// they are not the same answer, so the reader is told which one they are holding.
+    /// </summary>
+    private static void PrintCoverage(ProcEvent evt)
+    {
+        try
+        {
+            if (new WatchLedger().Covered(evt.StartTime)) return;
+
+            ConsoleHost.Line();
+            ConsoleHost.Dim(Loc.T("coverage.not_watched"));
+        }
+        catch
+        {
+            // The ledger is a nicety; never let it get in the way of the answer.
+        }
     }
 
     /// <summary>Does this binary have a past on this machine, or did it show up today?</summary>

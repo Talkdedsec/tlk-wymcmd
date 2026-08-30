@@ -70,6 +70,7 @@
         <StackPanel Grid.Row="2" Margin="0,14,0,0">
             <TextBlock Text="{Binding BlackBoxText}" Style="{StaticResource Label}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding ServiceText}" Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,4,0,0" />
+            <TextBlock Text="{Binding CoverageText}" Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,4,0,0" />
             <TextBlock Text="{Binding Message}" Foreground="{StaticResource Mint}" Margin="0,8,0,0" TextWrapping="Wrap" />
         </StackPanel>
 

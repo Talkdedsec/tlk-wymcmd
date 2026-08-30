@@ -37,7 +37,8 @@ public sealed class WatchdogService : ServiceBase
 
         _engine = new CaptureEngine(_store, tree, new AttributionEngine(new AutostartIndex()), rules)
         {
-            EnforceRules = true
+            EnforceRules = true,
+            Kind = WatchKind.Service
         };
         _feed = new PipeServer();
         _feed.Start();

@@ -108,6 +108,7 @@
       "export": "yakalanan olayları dışa aktar",
       "service": "nöbet servisini kur veya yönet",
       "doctor": "neyin açık neyin eksik olduğunu kontrol et",
+      "coverage": "ne zaman izleniyordu, ne zaman izlenmiyordu",
       "uninstall": "wymcmd'nin sistemde bıraktığı her izi kaldır",
       "install": "wymcmd'yi kalıcı bir yere kopyala ve PATH'e ekle",
       "prune": "saklama politikasını kayıtlı geçmişe şimdi uygula"
@@ -149,6 +150,24 @@
       "no_events": "henüz olay yok",
       "installed": "kurulu",
       "database": "{0} KB, {1} olay, {2:g} - {3:g}"
+    }
+  },
+  "coverage": {
+    "title": "wymcmd kapsam",
+    "window": "aralık   {0:g} - {1:g}",
+    "watched": "izlenen  {0}, %{1}",
+    "blackbox_on": "kara kutu açık, açılışlar ve yeniden başlatmalar da kayıtta",
+    "blackbox_off": "kara kutu kapalı - wymcmd kapalıyken hiçbir şey kaydedilmiyor",
+    "never": "bu makinede hiç kayıt yapılmamış",
+    "spans_header": "izlenen",
+    "gaps_header": "boşluk ({0})",
+    "gap_hint": "boşluğa denk gelen açılışlar yine açıklanabilir, ama kayıttan değil Windows'un tuttuklarından",
+    "not_watched": "o anda hiçbir şey kayıt yapmıyordu - bu, Windows'un tuttuklarından yeniden kuruldu",
+    "summary": "son 7 günün {0} kadarı izlendi, {1} boşluk",
+    "now": "şimdi",
+    "kind": {
+      "live": "pencere",
+      "service": "servis"
     }
   },
   "list": {

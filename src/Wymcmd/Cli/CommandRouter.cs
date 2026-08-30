@@ -76,6 +76,7 @@ public static class CommandRouter
             "help" => Usage(),
             "version" or "--version" => Version(),
             "doctor" => Commands.Doctor.Run(rest),
+            "coverage" => Commands.Coverage.Run(rest),
             "list" => Commands.List.Run(rest),
             "timeline" => Commands.Timeline.Run(rest),
             "watch" => await Commands.Watch.RunAsync(rest),
@@ -104,7 +105,7 @@ public static class CommandRouter
         ConsoleHost.Line();
         ConsoleHost.Strong(Loc.T("cli.commands_header"));
 
-        foreach (var name in new[] { "why", "timeline", "list", "watch", "trap", "tree", "kill", "rules", "blackbox", "sources", "export", "service", "doctor", "install", "prune", "uninstall" })
+        foreach (var name in new[] { "why", "timeline", "list", "watch", "trap", "tree", "kill", "rules", "blackbox", "sources", "export", "service", "doctor", "coverage", "install", "prune", "uninstall" })
             ConsoleHost.Line($"  {name,-10} {Loc.T("cli.cmd." + name)}");
 
         ConsoleHost.Line();

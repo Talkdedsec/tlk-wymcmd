@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Service;
 using Wymcmd.Core.Setup;
+using Wymcmd.Core.Store;
 
 namespace Wymcmd.ViewModels;
 
@@ -31,6 +32,7 @@ public sealed partial class SourcesViewModel : ObservableObject
 
     [ObservableProperty] private string _blackBoxText = "";
     [ObservableProperty] private string _serviceText = "";
+    [ObservableProperty] private string _coverageText = "";
     [ObservableProperty] private string _message = "";
 
     [ObservableProperty]
@@ -52,24 +54,47 @@ public sealed partial class SourcesViewModel : ObservableObject
 
         try
         {
-            var (statuses, blackBox, service) = await Task.Run(() => (
+            var (statuses, blackBox, service, coverage) = await Task.Run(() => (
                 SourceInspector.Inspect(),
                 BlackBoxInstaller.IsInstalled()
                     ? Loc.T("blackbox.installed", BlackBoxInstaller.TraceSizeBytes() / (1024 * 1024))
                     : Loc.T("blackbox.how_to_enable"),
                 WatchdogService.IsInstalled()
                     ? Loc.T("service.state", WatchdogService.State() ?? "?")
-                    : Loc.T("service.not_installed")));
+                    : Loc.T("service.not_installed"),
+                DescribeCoverage()));
 
             Rows.Clear();
             foreach (var status in statuses) Rows.Add(new SourceRow(status));
 
             BlackBoxText = blackBox;
             ServiceText = service;
+            CoverageText = coverage;
         }
         finally
         {
             Busy = false;
+        }
+    }
+
+    /// <summary>How much of the last week was actually recorded, and how much only looks like it.</summary>
+    private static string DescribeCoverage()
+    {
+        try
+        {
+            var to = DateTime.Now;
+            var from = to.AddDays(-7);
+
+            var ledger = new WatchLedger();
+            var spans = ledger.Spans(from, to);
+            if (spans.Count == 0) return Loc.T("coverage.never");
+
+            var watched = spans.Aggregate(TimeSpan.Zero, (total, s) => total + (s.To - s.From));
+            return Loc.T("coverage.summary", Loc.Duration(watched), ledger.Gaps(from, to).Count);
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
         }
     }
 
