@@ -19,6 +19,11 @@
   the encoded command it decoded, the interpreter that actually ran. Nothing is inferred and
   nothing is scored: it names findings in a vocabulary a security reader already has, so a launch
   can be looked up, matched against a detection rule or pasted into a ticket.
+- **Where it reached.** `wymcmd why` lists the connections and DNS queries Sysmon recorded for
+  that process while it was alive. Only Sysmon records this per process; without it the section is
+  simply absent, because a machine-wide DNS log cannot say which process asked.
+- Reading the Windows event logs is given a **time budget**, so a machine with a long history
+  cannot hold the window while a filtered read walks a log end to end.
 - The rules file no longer has a second copy of every enabled rule written into it.
 
 ## 0.2.1

@@ -173,6 +173,11 @@
       "blackbox": "black box"
     }
   },
+  "network": {
+    "connect": "connect",
+    "query": "dns",
+    "more": "{0} more"
+  },
   "list": {
     "count": "{0} events"
   },
@@ -203,6 +208,7 @@
     "chain": "ancestry",
     "risk": "risk",
     "attack": "ATT&CK",
+    "network": "network",
     "history": "execution history"
   },
   "gui": {

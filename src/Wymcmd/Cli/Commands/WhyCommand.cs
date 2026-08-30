@@ -44,9 +44,36 @@ public static class WhyCommand
         }
 
         EventFormatter.Detail(evt);
+        PrintNetwork(evt);
         PrintCoverage(evt);
         PrintHistory(evt);
         return CommandRouter.ExitOk;
+    }
+
+    /// <summary>
+    /// Where it reached while it was alive. Only Sysmon records this per process, so on a machine
+    /// without it there is nothing to show and nothing is claimed - a machine-wide DNS log would
+    /// not tell us which process asked.
+    /// </summary>
+    private static void PrintNetwork(ProcEvent evt)
+    {
+        var until = evt.ExitTime ?? evt.StartTime.AddHours(2);
+        if (until > DateTime.Now) until = DateTime.Now;
+
+        var touches = EvtxReader.NetworkTouches(evt.Pid, evt.StartTime.AddSeconds(-1), until);
+        if (touches.Count == 0) return;
+
+        ConsoleHost.Line();
+        ConsoleHost.Strong(Loc.T("why.network"));
+
+        foreach (var touch in touches.Take(12))
+        {
+            var what = Loc.T(touch.IsQuery ? "network.query" : "network.connect");
+            var detail = touch.Detail is { Length: > 0 } ? ConsoleHost.Color("  " + touch.Detail, 90) : "";
+            ConsoleHost.Line($"  {touch.When.ToString("T", Loc.Culture),-10} {what,-9} {touch.Target}{detail}");
+        }
+
+        if (touches.Count > 12) ConsoleHost.Dim("  " + Loc.T("network.more", touches.Count - 12));
     }
 
     /// <summary>
