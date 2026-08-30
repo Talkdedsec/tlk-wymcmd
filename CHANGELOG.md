@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **`WYMCMD_HOME`**: point the database, rules, settings, log and traces at a folder of your
+  choosing — a stick, a folder for one investigation, a sandbox that gets thrown away afterwards.
+  Without it nothing changes: the machine-wide folder when it is writable, otherwise LocalAppData.
+- The test suite no longer writes into the machine's own log and database. A test that
+  deliberately feeds the rule loader a broken file was leaving "rules file unreadable" in the
+  user's log, which reads exactly like a real fault and is not one.
+- The readme said an optional hash lookup was off by default. There is no such feature and no HTTP
+  client anywhere in the binary; the claim is gone.
+
 ## 0.3.0
 
 - **Coverage.** The tool records when something was actually watching and closes each stretch with

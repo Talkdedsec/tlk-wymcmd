@@ -212,8 +212,11 @@ kaynaktan geldiği görünür. Boşluk doldurmak için hiçbir şey uydurulmaz.
 ## Gizlilik
 
 Her şey makinende kalır: `%ProgramData%\wymcmd` (yönetici değilken `%LOCALAPPDATA%\wymcmd`)
-altında tek bir SQLite veritabanı. Telemetri yok, ağ çağrısı yok, otomatik güncelleme yok.
-İsteğe bağlı hash sorgusu varsayılan olarak kapalıdır ve kendiliğinden açılmaz.
+altında tek bir SQLite veritabanı. Telemetri yok, ağ çağrısı yok, otomatik güncelleme yok —
+ikili dosyanın içinde hiç HTTP istemcisi yok, yani kapatılacak bir şey de yok.
+
+`WYMCMD_HOME` tanımlarsan her şey gösterdiğin yerde durur: bir bellek, tek bir incelemeye ait bir
+klasör, sonra silinecek bir kum havuzu.
 
 Bilerek unutur da: varsayılan 30 gün ve 256 MB, ikisi de `settings.json` içinde; arka planda ve
 istendiğinde `wymcmd prune` ile uygulanır. Kara kutu izleri oluşturulurken tavanı belirlenir,
