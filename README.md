@@ -132,6 +132,7 @@ wymcmd blackbox on|off|status|read
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
+wymcmd coverage --last 7d      # when something was watching, and when nothing was
 wymcmd install                  # put wymcmd on your PATH (per user, no administrator)
 wymcmd prune [--days N] [--max-mb N]
 wymcmd uninstall --purge        # revert every change, delete every file
@@ -139,6 +140,22 @@ wymcmd uninstall --purge        # revert every change, delete every file
 
 Every command takes `--json` (machine-readable, keys always in English) and `--lang en|tr`.
 Exit codes mean something: `0` ok, `2` needs administrator, `3` a data source is off, `4` nothing matched.
+
+## Watched, or worked out afterwards
+
+Both are real answers and they are not the same answer. wymcmd keeps a record of when something
+was actually recording — the window, the watchdog service — and closes each stretch with a
+heartbeat, so a session that ended with the machine losing power still knows to the minute where
+its coverage stopped rather than claiming it was watching a switched-off computer.
+
+```console
+wymcmd coverage --last 7d
+```
+
+That prints the stretches that were recorded, and the gaps between them. `wymcmd why` says it out
+loud too: an explanation for a moment inside a gap is marked as rebuilt from what Windows kept,
+not read back from a recording. The black box closes most gaps on its own, because Windows starts
+it at boot without anything of ours running.
 
 ## Rules
 

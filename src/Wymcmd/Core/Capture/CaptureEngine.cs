@@ -30,6 +30,10 @@ public sealed class CaptureEngine : IAsyncDisposable
     private ICollector? _collector;
     private int _enriched;
 
+    private WatchLedger? _ledger;
+    private System.Threading.Timer? _beat;
+    private long _watchId;
+
     public CaptureEngine(EventStore store, ProcessTree tree, AttributionEngine attribution, RuleSet? rules = null)
     {
         _store = store;
@@ -48,6 +52,9 @@ public sealed class CaptureEngine : IAsyncDisposable
     /// <summary>Rules are only enforced when asked - watching should not change the machine.</summary>
     public bool EnforceRules { get; set; }
 
+    /// <summary>Which watcher this is, for the coverage record. The window is Live, the service Service.</summary>
+    public WatchKind Kind { get; init; } = WatchKind.Live;
+
     public void Start()
     {
         if (_worker is not null) return;
@@ -63,6 +70,45 @@ public sealed class CaptureEngine : IAsyncDisposable
         _collector.Start();
 
         _worker = Task.Run(() => EnrichLoopAsync(_shutdown.Token));
+
+        OpenWatch();
+    }
+
+    /// <summary>
+    /// Records that something was watching from here on. Losing the ledger is not a reason to
+    /// stop capturing, so a failure here is noted and swallowed.
+    /// </summary>
+    private void OpenWatch()
+    {
+        try
+        {
+            _ledger = new WatchLedger(_store.DatabasePath);
+            _watchId = _ledger.Begin(Kind);
+            _beat = new System.Threading.Timer(_ => Beat(), null, WatchLedger.BeatInterval, WatchLedger.BeatInterval);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("coverage could not be recorded: " + ex.Message);
+            _ledger = null;
+        }
+    }
+
+    private void Beat()
+    {
+        try { _ledger?.Beat(_watchId); }
+        catch (Exception ex) { Log.Warn("coverage heartbeat failed: " + ex.Message); }
+    }
+
+    private void CloseWatch()
+    {
+        _beat?.Dispose();
+        _beat = null;
+
+        try { _ledger?.End(_watchId); }
+        catch (Exception ex) { Log.Warn("coverage could not be closed: " + ex.Message); }
+
+        _ledger = null;
+        _watchId = 0;
     }
 
     private ICollector SelectCollector()
@@ -232,6 +278,8 @@ public sealed class CaptureEngine : IAsyncDisposable
         _collector?.Stop();
         _collector?.Dispose();
         _collector = null;
+
+        CloseWatch();
     }
 
     /// <summary>

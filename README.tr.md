@@ -132,6 +132,7 @@ wymcmd blackbox on|off|status|read
 wymcmd sources enable|status
 wymcmd service install|start|stop|uninstall
 wymcmd doctor
+wymcmd coverage --last 7d      # ne zaman izleniyordu, ne zaman izlenmiyordu
 wymcmd install                  # wymcmd'yi PATH'e koy (kullanıcı bazlı, yönetici gerekmez)
 wymcmd prune [--days N] [--max-mb N]
 wymcmd uninstall --purge        # her değişikliği geri al, her dosyayı sil
@@ -139,6 +140,22 @@ wymcmd uninstall --purge        # her değişikliği geri al, her dosyayı sil
 
 Her komut `--json` (makine-okunur, anahtarlar hep İngilizce) ve `--lang en|tr` destekler.
 Çıkış kodları anlamlı: `0` tamam, `2` yönetici gerekiyor, `3` veri kaynağı kapalı, `4` eşleşme yok.
+
+## İzlendi mi, sonradan mı çıkarıldı
+
+İkisi de gerçek cevap ama aynı cevap değil. wymcmd, gerçekten kayıt yapan bir şeyin — pencerenin,
+nöbetçi servisin — hangi aralıklarda çalıştığını tutuyor ve her aralığı kalp atışıyla kapatıyor.
+Böylece elektrik kesilerek biten bir oturum bile kapsamının nerede durduğunu dakikası dakikasına
+biliyor; kapalı bir bilgisayarı izlediğini iddia etmiyor.
+
+```console
+wymcmd coverage --last 7d
+```
+
+Kaydedilen aralıkları ve aralarındaki boşlukları yazar. `wymcmd why` de bunu söyler: boşluğa denk
+gelen bir açıklama, kayıttan okunmuş değil Windows'un tuttuklarından yeniden kurulmuş olarak
+işaretlenir. Boşlukların çoğunu kara kutu kapatır, çünkü onu Windows açılışta kendisi başlatıyor
+ve bizden hiçbir şey çalışmıyor.
 
 ## Kurallar
 

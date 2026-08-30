@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Coverage.** The tool now records when something was actually watching, and closes each stretch
+  with a heartbeat, so a session that ended with the machine losing power knows where its coverage
+  really stopped instead of claiming it watched a switched-off computer. `wymcmd coverage` prints
+  the recorded stretches and the gaps between them, the window shows the same summary, and
+  `wymcmd why` marks an explanation for a moment inside a gap as rebuilt from what Windows kept
+  rather than read back from a recording.
+
 ## 0.2.1
 
 - **The Sources button no longer freezes the app** ([#1](https://github.com/Talkdedsec/tlk-wymcmd/issues/1)).
