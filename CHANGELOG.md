@@ -24,6 +24,10 @@
   simply absent, because a machine-wide DNS log cannot say which process asked.
 - Reading the Windows event logs is given a **time budget**, so a machine with a long history
   cannot hold the window while a filtered read walks a log end to end.
+- **Four more places a launch can come from**: Active Setup stubs, the Winlogon Shell and Userinit
+  values, a logon script named in the user's environment, and a COM server registered per user
+  that shadows the machine-wide one. Active Setup had a name in the code and nothing that ever
+  produced it; it does now.
 - The rules file no longer has a second copy of every enabled rule written into it.
 
 ## 0.2.1

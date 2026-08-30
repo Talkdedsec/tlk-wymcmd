@@ -63,7 +63,9 @@
     "terminal": "terminal or shell",
     "developertool": "developer tool",
     "systemcomponent": "Windows component",
-    "remoteaccess": "remote session"
+    "remoteaccess": "remote session",
+    "winlogonhook": "Winlogon hook",
+    "comserver": "COM server registered for you"
   },
   "risk": {
     "unsigned": "unsigned binary",

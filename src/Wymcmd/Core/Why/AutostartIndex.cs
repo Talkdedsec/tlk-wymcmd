@@ -57,6 +57,10 @@ public sealed class AutostartIndex
         Safely(() => collected.AddRange(ScheduledTasks()), "scheduled tasks");
         Safely(() => collected.AddRange(Services()), "services");
         Safely(() => collected.AddRange(ExecutionOptions()), "image file execution options");
+        Safely(() => collected.AddRange(ActiveSetup()), "active setup");
+        Safely(() => collected.AddRange(WinlogonHooks()), "winlogon");
+        Safely(() => collected.AddRange(LogonScripts()), "logon scripts");
+        Safely(() => collected.AddRange(ComServers()), "com servers");
         Safely(() => collected.AddRange(WmiConsumers()), "wmi consumers");
 
         lock (_sync)
@@ -299,6 +303,137 @@ public sealed class AutostartIndex
             if (entry is not null) yield return entry;
         }
     }
+
+    /// <summary>
+    /// Active Setup runs a stub once per user at first logon, which is exactly the shape of a
+    /// console that appears the first time somebody signs in and never again.
+    /// </summary>
+    private static IEnumerable<AutostartEntry> ActiveSetup()
+    {
+        (RegistryKey Root, string Path)[] locations =
+        [
+            (Registry.LocalMachine, @"SOFTWARE\Microsoft\Active Setup\Installed Components"),
+            (Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Active Setup\Installed Components"),
+            (Registry.CurrentUser, @"SOFTWARE\Microsoft\Active Setup\Installed Components")
+        ];
+
+        foreach (var (root, path) in locations)
+        {
+            using var parent = root.OpenSubKey(path);
+            if (parent is null) continue;
+
+            foreach (var name in parent.GetSubKeyNames())
+            {
+                AutostartEntry? entry = null;
+                try
+                {
+                    using var key = parent.OpenSubKey(name);
+                    var stub = key?.GetValue("StubPath") as string;
+                    if (string.IsNullOrWhiteSpace(stub)) continue;
+
+                    entry = new AutostartEntry(
+                        LaunchSourceKind.ActiveSetup,
+                        key?.GetValue(null) as string is { Length: > 0 } label ? label : name,
+                        Hive(root) + "\\" + path + "\\" + name,
+                        stub,
+                        CommandLineDecoder.ImageFromCommandLine(stub));
+                }
+                catch
+                {
+                    // ignore
+                }
+
+                if (entry is not null) yield return entry;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Winlogon's Shell and Userinit normally read explorer.exe and userinit.exe. Anything appended
+    /// to them runs at every logon, before the desktop is up.
+    /// </summary>
+    private static IEnumerable<AutostartEntry> WinlogonHooks()
+    {
+        const string path = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon";
+
+        foreach (var root in new[] { Registry.LocalMachine, Registry.CurrentUser })
+        {
+            using var key = root.OpenSubKey(path);
+            if (key is null) continue;
+
+            foreach (var valueName in new[] { "Shell", "Userinit", "AppSetup", "TaskMan" })
+            {
+                if (key.GetValue(valueName) is not string command || string.IsNullOrWhiteSpace(command)) continue;
+
+                // Both are comma separated lists and both ship with a default entry.
+                foreach (var part in command.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    yield return new AutostartEntry(
+                        LaunchSourceKind.WinlogonHook,
+                        valueName,
+                        Hive(root) + "\\" + path,
+                        part,
+                        CommandLineDecoder.ImageFromCommandLine(part));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A logon script named in the environment, which Windows runs for that user at sign-in.
+    /// </summary>
+    private static IEnumerable<AutostartEntry> LogonScripts()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey("Environment");
+        if (key?.GetValue("UserInitMprLogonScript") is not string script || string.IsNullOrWhiteSpace(script))
+            yield break;
+
+        yield return new AutostartEntry(
+            LaunchSourceKind.LogonScript,
+            "UserInitMprLogonScript",
+            @"HKCU\Environment",
+            script,
+            CommandLineDecoder.ImageFromCommandLine(script));
+    }
+
+    /// <summary>
+    /// A COM server registered per user shadows the machine-wide one of the same class, so the
+    /// next thing to ask for that class gets this executable instead.
+    /// </summary>
+    private static IEnumerable<AutostartEntry> ComServers()
+    {
+        const string path = @"SOFTWARE\Classes\CLSID";
+
+        using var parent = Registry.CurrentUser.OpenSubKey(path);
+        if (parent is null) yield break;
+
+        foreach (var clsid in parent.GetSubKeyNames())
+        {
+            AutostartEntry? entry = null;
+            try
+            {
+                using var server = parent.OpenSubKey(clsid + @"\LocalServer32");
+                var command = server?.GetValue(null) as string;
+                if (string.IsNullOrWhiteSpace(command)) continue;
+
+                entry = new AutostartEntry(
+                    LaunchSourceKind.ComServer,
+                    clsid,
+                    @"HKCU\" + path + "\\" + clsid,
+                    command,
+                    CommandLineDecoder.ImageFromCommandLine(command));
+            }
+            catch
+            {
+                // ignore
+            }
+
+            if (entry is not null) yield return entry;
+        }
+    }
+
+    private static string Hive(RegistryKey root)
+        => ReferenceEquals(root, Registry.LocalMachine) ? "HKLM" : "HKCU";
 
     private static IEnumerable<AutostartEntry> WmiConsumers()
     {

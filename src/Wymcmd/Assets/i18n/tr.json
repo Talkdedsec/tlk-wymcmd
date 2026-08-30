@@ -63,7 +63,9 @@
     "terminal": "terminal veya kabuk",
     "developertool": "geliştirici aracı",
     "systemcomponent": "Windows bileşeni",
-    "remoteaccess": "uzak oturum"
+    "remoteaccess": "uzak oturum",
+    "winlogonhook": "Winlogon kancası",
+    "comserver": "sana kayıtlı COM sunucusu"
   },
   "risk": {
     "unsigned": "imzasız dosya",
