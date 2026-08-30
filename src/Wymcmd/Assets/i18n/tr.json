@@ -173,6 +173,11 @@
       "blackbox": "kara kutu"
     }
   },
+  "network": {
+    "connect": "bağlantı",
+    "query": "dns",
+    "more": "{0} tane daha"
+  },
   "list": {
     "count": "{0} olay"
   },
@@ -203,6 +208,7 @@
     "chain": "üst zincir",
     "risk": "risk",
     "attack": "ATT&CK",
+    "network": "ağ",
     "history": "çalışma geçmişi"
   },
   "gui": {

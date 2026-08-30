@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Xml.Linq;
 using Wymcmd.Core.Diagnostics;
@@ -11,6 +12,9 @@ public sealed record ScriptBlock(DateTime When, int Pid, string Text);
 
 public sealed record WmiConsumerHit(DateTime When, string Consumer, string? Query);
 
+/// <summary>Somewhere a process reached, or a name it asked to have resolved.</summary>
+public sealed record NetworkTouch(DateTime When, bool IsQuery, string Target, string? Detail);
+
 /// <summary>
 /// Reads what Windows already recorded on its own. This is the path that answers
 /// "why did a console open at 14:22" on a machine where wymcmd was not even running.
@@ -22,6 +26,8 @@ public static class EvtxReader
     private const string TaskLog = "Microsoft-Windows-TaskScheduler/Operational";
     private const string WmiLog = "Microsoft-Windows-WMI-Activity/Operational";
     private const string SysmonLog = "Microsoft-Windows-Sysmon/Operational";
+
+    private static readonly TimeSpan ReadBudget = TimeSpan.FromSeconds(5);
 
     /// <summary>Process creations from the Security log (event 4688).</summary>
     public static IReadOnlyList<ProcEvent> ProcessCreations(DateTime from, DateTime to, int limit = 5000)
@@ -172,6 +178,66 @@ public static class EvtxReader
         return results;
     }
 
+    /// <summary>
+    /// Where one process reached while it was alive, from Sysmon's connection (3) and DNS query
+    /// (22) events. Only Sysmon records this per process; without it there is nothing to read and
+    /// the answer is an honest empty list rather than a guess from machine-wide DNS.
+    /// </summary>
+    public static IReadOnlyList<NetworkTouch> NetworkTouches(int pid, DateTime from, DateTime to, int limit = 400)
+    {
+        var results = new List<NetworkTouch>();
+
+        foreach (var record in Read(SysmonLog, 3, from, to, limit))
+        {
+            var fields = Fields(record);
+            if (Number(fields.GetValueOrDefault("ProcessId")) != pid) continue;
+
+            var host = fields.GetValueOrDefault("DestinationHostname");
+            var address = fields.GetValueOrDefault("DestinationIp") ?? "?";
+            var port = fields.GetValueOrDefault("DestinationPort");
+            var protocol = fields.GetValueOrDefault("Protocol")?.ToUpperInvariant();
+
+            var target = host is { Length: > 0 } ? $"{host} ({address})" : address;
+            if (port is { Length: > 0 }) target += ":" + port;
+
+            results.Add(new NetworkTouch(record.TimeCreated ?? from, IsQuery: false, target, protocol));
+        }
+
+        foreach (var record in Read(SysmonLog, 22, from, to, limit))
+        {
+            var fields = Fields(record);
+            if (Number(fields.GetValueOrDefault("ProcessId")) != pid) continue;
+
+            var name = fields.GetValueOrDefault("QueryName");
+            if (name is not { Length: > 0 }) continue;
+
+            results.Add(new NetworkTouch(
+                record.TimeCreated ?? from, IsQuery: true, name, Resolved(fields.GetValueOrDefault("QueryResults"))));
+        }
+
+        return results.OrderBy(touch => touch.When).ToList();
+    }
+
+    /// <summary>Sysmon writes results as "type: 5 ::ffff:1.2.3.4;type: 5 ...;" - keep the addresses.</summary>
+    public static string? Resolved(string? results)
+    {
+        if (results is not { Length: > 0 }) return null;
+
+        var addresses = results
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(part => part.Replace("type:", "", StringComparison.OrdinalIgnoreCase).Trim())
+            .Select(part => part.Contains(' ') ? part[(part.LastIndexOf(' ') + 1)..] : part)
+            .Select(part => part.Replace("::ffff:", "", StringComparison.OrdinalIgnoreCase))
+            .Where(part => part.Length > 0 && part != "-")
+            .Distinct()
+            .Take(4)
+            .ToList();
+
+        return addresses.Count > 0 ? string.Join(", ", addresses) : null;
+    }
+
+    private static int Number(string? value) => int.TryParse(value, out var parsed) ? parsed : 0;
+
     private static IEnumerable<EventRecord> Read(string log, int eventId, DateTime from, DateTime to, int limit)
     {
         EventLogReader reader;
@@ -199,12 +265,24 @@ public static class EvtxReader
 
         using (reader)
         {
+            // A filtered read still walks the log, and these logs run to hundreds of megabytes.
+            // The caller is often the window, so the walk gets a budget rather than the chance to
+            // hold the interface for as long as the machine's history happens to be long.
+            var clock = Stopwatch.StartNew();
+
             for (var i = 0; i < limit; i++)
             {
+                var left = ReadBudget - clock.Elapsed;
+                if (left <= TimeSpan.Zero)
+                {
+                    Log.Debug($"event log {log} read gave up after {i} records");
+                    yield break;
+                }
+
                 EventRecord? record;
                 try
                 {
-                    record = reader.ReadEvent();
+                    record = reader.ReadEvent(left);
                 }
                 catch (EventLogException)
                 {
