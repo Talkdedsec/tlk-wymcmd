@@ -94,7 +94,7 @@ public sealed class CaptureEngine : IAsyncDisposable
         {
             try
             {
-                var raw = await reader.ReadAsync(token);
+                var raw = await reader.ReadAsync(token).ConfigureAwait(false);
                 var evt = Enrich(raw);
 
                 Apply(evt);
@@ -181,7 +181,7 @@ public sealed class CaptureEngine : IAsyncDisposable
     {
         try
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(350), _shutdown.Token);
+            await Task.Delay(TimeSpan.FromMilliseconds(350), _shutdown.Token).ConfigureAwait(false);
             var visibility = WindowFinder.ConsoleVisibility(evt.Pid, pid => _tree.Resolve(pid)?.ParentPid);
             if (visibility == evt.Window) return;
 
@@ -193,7 +193,7 @@ public sealed class CaptureEngine : IAsyncDisposable
             }
 
             Observed?.Invoke(evt);
-            await _store.UpdateWindowAsync(evt.Pid, evt.StartTime, evt.Window, evt.Risk);
+            await _store.UpdateWindowAsync(evt.Pid, evt.StartTime, evt.Window, evt.Risk).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -234,15 +234,21 @@ public sealed class CaptureEngine : IAsyncDisposable
         _collector = null;
     }
 
+    /// <summary>
+    /// The window disposes the engine as it closes, so nothing here may need the caller's thread
+    /// back to finish - see the same note on the event store.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         Stop();
-        await _shutdown.CancelAsync();
+        await _shutdown.CancelAsync().ConfigureAwait(false);
         _incoming.Writer.TryComplete();
+
         if (_worker is not null)
         {
-            try { await _worker; } catch { /* shutdown */ }
+            try { await _worker.ConfigureAwait(false); } catch { /* on the way out */ }
         }
+
         _shutdown.Dispose();
     }
 }

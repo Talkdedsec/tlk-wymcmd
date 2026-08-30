@@ -131,6 +131,7 @@
     "ok": "ok",
     "missing": "missing",
     "degraded": "degraded",
+    "unknown": "unknown",
     "admin": "administrator rights",
     "etw": "real-time ETW capture",
     "blackbox": "black box recorder (AutoLogger)",
@@ -144,6 +145,7 @@
     "task_log": "Task Scheduler operational log",
     "detail": {
       "needs_admin": "needs administrator",
+      "timed_out": "check timed out",
       "no_events": "no events yet",
       "installed": "installed",
       "database": "{0} KB, {1} events, {2:g} - {3:g}"
@@ -185,6 +187,7 @@
     "start_watching": "Start watching",
     "stop_watching": "Stop watching",
     "refresh": "Refresh",
+    "checking": "checking…",
     "panic": "Panic",
     "panic_done": "{0} console process(es) terminated",
     "filter_console": "consoles only",

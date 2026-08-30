@@ -20,6 +20,19 @@
             <TextBlock Text="{loc:T gui.sources_hint}" Style="{StaticResource Label}" TextWrapping="Wrap" Margin="0,4,0,0" />
         </StackPanel>
 
+        <TextBlock Grid.Row="1" Text="{loc:T gui.checking}" VerticalAlignment="Top">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource Label}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Busy}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -60,7 +73,7 @@
             <TextBlock Text="{Binding Message}" Foreground="{StaticResource Mint}" Margin="0,8,0,0" TextWrapping="Wrap" />
         </StackPanel>
 
-        <WrapPanel Grid.Row="3" Margin="0,16,0,0">
+        <WrapPanel Grid.Row="3" Margin="0,16,0,0" IsEnabled="{Binding Idle}">
             <Button Content="{loc:T gui.enable_sources}" Command="{Binding EnableSourcesCommand}"
                     Style="{StaticResource AccentButton}" Margin="0,0,8,8" />
             <Button Content="{loc:T gui.toggle_blackbox}" Command="{Binding ToggleBlackBoxCommand}" Margin="0,0,8,8" />

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.1
+
+- **The Sources button no longer freezes the app** ([#1](https://github.com/Talkdedsec/tlk-wymcmd/issues/1)).
+  Opening the panel reads the event database, and closing that store awaited its writer through
+  whatever context the caller was on. From the window that context is the dispatcher, which was
+  already blocked waiting for the same call, so the two sat waiting for each other and the only
+  way out was Task Manager. Closing the store and the capture engine is now bounded and never
+  needs the calling thread back. Closing the window went the same way and is fixed with it.
+- The Sources panel does its checks **off the UI thread** and says so while it works, so a slow
+  machine shows a window that is drawing rather than one that looks hung.
+- Asking the Security log for the newest 4688 is given a **time budget**. On a machine where
+  process auditing was never on, the answer costs a walk of the whole log; the check now reports
+  `unknown` instead of holding everything up.
+
 ## 0.2.0
 
 - The black box records **command lines**: a second ETW session in system trace mode sits beside

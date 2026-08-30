@@ -33,6 +33,7 @@ public static class Doctor
             {
                 SourceState.Ok => (Loc.T("doctor.ok"), 92),
                 SourceState.Degraded => (Loc.T("doctor.degraded"), 93),
+                SourceState.Unknown => (Loc.T("doctor.unknown"), 90),
                 _ => (Loc.T("doctor.missing"), 91)
             };
 

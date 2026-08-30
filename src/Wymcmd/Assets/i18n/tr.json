@@ -131,6 +131,7 @@
     "ok": "tamam",
     "missing": "yok",
     "degraded": "kısıtlı",
+    "unknown": "bilinmiyor",
     "admin": "yönetici hakkı",
     "etw": "gerçek zamanlı ETW yakalama",
     "blackbox": "kara kutu kaydedici (AutoLogger)",
@@ -144,6 +145,7 @@
     "task_log": "Görev Zamanlayıcı işlem günlüğü",
     "detail": {
       "needs_admin": "yönetici hakkı gerekiyor",
+      "timed_out": "denetim zaman aşımına uğradı",
       "no_events": "henüz olay yok",
       "installed": "kurulu",
       "database": "{0} KB, {1} olay, {2:g} - {3:g}"
@@ -185,6 +187,7 @@
     "start_watching": "İzlemeye başla",
     "stop_watching": "İzlemeyi durdur",
     "refresh": "Yenile",
+    "checking": "denetleniyor…",
     "panic": "Panik",
     "panic_done": "{0} konsol süreci sonlandırıldı",
     "filter_console": "yalnız konsol",
