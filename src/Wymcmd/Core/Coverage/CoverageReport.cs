@@ -46,15 +46,34 @@ public sealed record CoverageReport(
     {
         if (new WatchLedger().Covered(moment)) return true;
 
-        return BlackBoxReader.RetainedRange() is { } trace && trace.From <= moment && moment <= trace.To;
+        return Recorder() is { } trace && trace.From <= moment && moment <= trace.To;
     }
 
     public static CoverageReport Build(DateTime from, DateTime to, WatchLedger? ledger = null)
-        => Compose(
+    {
+        var on = BlackBoxOnNow();
+
+        return Compose(
             from, to,
-            Combine(from, to, ledger ?? new WatchLedger()),
+            Combine(from, to, ledger ?? new WatchLedger(), on),
             PowerHistory.Awake(from, to),
-            BlackBoxInstaller.IsInstalled() && BlackBoxInstaller.IsEnabled() != false);
+            on);
+    }
+
+    private static bool BlackBoxOnNow()
+        => BlackBoxInstaller.IsInstalled() && BlackBoxInstaller.IsEnabled() != false;
+
+    /// <summary>
+    /// How far back the recorder answers for, and up to when. A running session is recording right
+    /// now even though its trace was last flushed minutes ago, so a live session reaches to now -
+    /// taking the file's timestamp as the end would call the last few minutes unwatched.
+    /// </summary>
+    private static (DateTime From, DateTime To)? Recorder()
+    {
+        if (BlackBoxReader.RetainedRange() is not { } trace) return null;
+
+        return BlackBoxOnNow() ? (trace.From, DateTime.Now) : trace;
+    }
 
     /// <summary>
     /// The arithmetic on its own, with the machine handed in rather than asked. Build gathers the
@@ -81,12 +100,15 @@ public sealed record CoverageReport(
     /// Windows that starts it and nothing of ours is running - so its coverage is read back from
     /// how far the trace still reaches.
     /// </summary>
-    private static IReadOnlyList<WatchSpan> Combine(DateTime from, DateTime to, WatchLedger ledger)
+    private static IReadOnlyList<WatchSpan> Combine(
+        DateTime from, DateTime to, WatchLedger ledger, bool blackBoxOn)
     {
         var spans = ledger.Spans(from, to).ToList();
 
-        if (BlackBoxReader.RetainedRange() is { } trace)
+        if (BlackBoxReader.RetainedRange() is { } raw)
         {
+            var trace = blackBoxOn ? (From: raw.From, To: DateTime.Now) : raw;
+
             var start = trace.From > from ? trace.From : from;
             var end = trace.To < to ? trace.To : to;
 

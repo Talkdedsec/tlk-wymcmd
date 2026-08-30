@@ -37,6 +37,7 @@ public static class Exporter
         evidence = evt.Sources.ToString(),
         risk = evt.Risk,
         riskFactors = evt.RiskFactors.Select(factor => new { key = factor.Key, weight = factor.Weight, detail = factor.Detail }),
+        attack = Why.AttackMap.For(evt).Select(technique => new { id = technique.Id, name = technique.Name, url = technique.Url }),
         chain = evt.Chain.Select(link => new { pid = link.Pid, image = link.ImageName, commandLine = link.CommandLine })
     });
 
