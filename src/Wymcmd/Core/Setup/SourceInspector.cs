@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Security.Principal;
 using Microsoft.Win32;
@@ -6,7 +7,7 @@ using Wymcmd.Core.Store;
 
 namespace Wymcmd.Core.Setup;
 
-public enum SourceState { Ok, Degraded, Missing }
+public enum SourceState { Ok, Degraded, Missing, Unknown }
 
 public sealed record SourceStatus(string Key, SourceState State, string? Detail = null);
 
@@ -57,8 +58,17 @@ public static class SourceInspector
         };
     }
 
+    /// <summary>
+    /// Asking for the newest 4688 backwards costs a walk of the whole Security log when process
+    /// auditing was never switched on, and that log is routinely hundreds of megabytes. The read
+    /// gets a budget and says Unknown rather than holding whoever asked.
+    /// </summary>
+    private static readonly TimeSpan ReadBudget = TimeSpan.FromSeconds(3);
+
     private static SourceStatus SecurityAudit()
     {
+        var clock = Stopwatch.StartNew();
+
         try
         {
             var query = new EventLogQuery("Security", PathType.LogName, "*[System[EventID=4688]]")
@@ -66,9 +76,9 @@ public static class SourceInspector
                 ReverseDirection = true
             };
             using var reader = new EventLogReader(query);
-            using var record = reader.ReadEvent();
+            using var record = reader.ReadEvent(ReadBudget);
 
-            if (record is null) return new SourceStatus("security_audit", SourceState.Missing);
+            if (record is null) return clock.Elapsed >= ReadBudget ? TimedOut() : new SourceStatus("security_audit", SourceState.Missing);
 
             var age = DateTime.Now - (record.TimeCreated ?? DateTime.MinValue);
             return new SourceStatus("security_audit",
@@ -81,8 +91,11 @@ public static class SourceInspector
         }
         catch (EventLogException)
         {
-            return new SourceStatus("security_audit", SourceState.Missing);
+            return clock.Elapsed >= ReadBudget ? TimedOut() : new SourceStatus("security_audit", SourceState.Missing);
         }
+
+        static SourceStatus TimedOut()
+            => new("security_audit", SourceState.Unknown, Loc.T("doctor.detail.timed_out"));
     }
 
     private static SourceStatus CommandLineAudit()

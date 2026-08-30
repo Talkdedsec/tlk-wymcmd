@@ -308,12 +308,13 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     partial void OnUnsignedOnlyChanged(bool value) => LoadHistory();
     partial void OnMinRiskChanged(int value) => LoadHistory();
 
+    /// <summary>Closing the window must not be able to wedge it - every wait here is bounded.</summary>
     public void Dispose()
     {
         _flush.Stop();
         _feed?.Dispose();
         _engine?.Stop();
-        _engine?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _engine?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
         _store.Dispose();
     }
 }

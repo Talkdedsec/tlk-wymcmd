@@ -18,13 +18,14 @@ public sealed partial class SourceRow(SourceStatus status) : ObservableObject
     {
         SourceState.Ok => "doctor.ok",
         SourceState.Degraded => "doctor.degraded",
+        SourceState.Unknown => "doctor.unknown",
         _ => "doctor.missing"
     });
 }
 
 public sealed partial class SourcesViewModel : ObservableObject
 {
-    public SourcesViewModel() => Refresh();
+    public SourcesViewModel() => _ = Refresh();
 
     public ObservableCollection<SourceRow> Rows { get; } = [];
 
@@ -32,45 +33,75 @@ public sealed partial class SourcesViewModel : ObservableObject
     [ObservableProperty] private string _serviceText = "";
     [ObservableProperty] private string _message = "";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Idle))]
+    private bool _busy;
+
+    public bool Idle => !Busy;
+
+    /// <summary>
+    /// Every probe reaches for the event log, the service list or the registry, and the Security
+    /// log one costs seconds on a machine that never had process auditing turned on. None of it
+    /// belongs on the dispatcher: the window used to appear only once the slowest check came
+    /// back, which on a large log was indistinguishable from a freeze.
+    /// </summary>
     [RelayCommand]
-    private void Refresh()
+    private async Task Refresh()
     {
-        Rows.Clear();
-        foreach (var status in SourceInspector.Inspect()) Rows.Add(new SourceRow(status));
+        Busy = true;
 
-        BlackBoxText = BlackBoxInstaller.IsInstalled()
-            ? Loc.T("blackbox.installed", BlackBoxInstaller.TraceSizeBytes() / (1024 * 1024))
-            : Loc.T("blackbox.how_to_enable");
+        try
+        {
+            var (statuses, blackBox, service) = await Task.Run(() => (
+                SourceInspector.Inspect(),
+                BlackBoxInstaller.IsInstalled()
+                    ? Loc.T("blackbox.installed", BlackBoxInstaller.TraceSizeBytes() / (1024 * 1024))
+                    : Loc.T("blackbox.how_to_enable"),
+                WatchdogService.IsInstalled()
+                    ? Loc.T("service.state", WatchdogService.State() ?? "?")
+                    : Loc.T("service.not_installed")));
 
-        ServiceText = WatchdogService.IsInstalled()
-            ? Loc.T("service.state", WatchdogService.State() ?? "?")
-            : Loc.T("service.not_installed");
+            Rows.Clear();
+            foreach (var status in statuses) Rows.Add(new SourceRow(status));
+
+            BlackBoxText = blackBox;
+            ServiceText = service;
+        }
+        finally
+        {
+            Busy = false;
+        }
     }
 
     /// <summary>These all shell out to our own elevated CLI, so the UAC prompt names the action.</summary>
     [RelayCommand]
-    private void EnableSources() => RunElevated("sources", "enable");
+    private Task EnableSources() => RunElevated("sources", "enable");
 
     [RelayCommand]
-    private void ToggleBlackBox()
+    private Task ToggleBlackBox()
         => RunElevated("blackbox", BlackBoxInstaller.IsInstalled() ? "off" : "on");
 
     [RelayCommand]
-    private void ToggleService()
+    private Task ToggleService()
         => RunElevated("service", WatchdogService.IsInstalled() ? "uninstall" : "install");
 
     [RelayCommand]
-    private void RemoveEverything() => RunElevated("uninstall", "--purge");
+    private Task RemoveEverything() => RunElevated("uninstall", "--purge");
 
-    private void RunElevated(params string[] arguments)
+    private async Task RunElevated(params string[] arguments)
     {
-        var code = Elevation.Relaunch([.. arguments, "--lang", Loc.Language]);
+        Busy = true;
+
+        // The child runs to completion and the UAC prompt alone can sit there for a while.
+        var code = await Task.Run(() => Elevation.Relaunch([.. arguments, "--lang", Loc.Language]));
+
         Message = code switch
         {
             0 => Loc.T("gui.action_done"),
             null => Loc.T("cli.error.needs_admin"),
             _ => Loc.T("gui.action_failed", code.Value)
         };
-        Refresh();
+
+        await Refresh();
     }
 }

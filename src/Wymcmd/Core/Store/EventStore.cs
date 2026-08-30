@@ -69,7 +69,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         var deadline = DateTime.UtcNow + (timeout ?? TimeSpan.FromSeconds(5));
 
         while (Volatile.Read(ref _pending) > 0 && DateTime.UtcNow < deadline)
-            await Task.Delay(20);
+            await Task.Delay(20).ConfigureAwait(false);
     }
 
     private void Initialize()
@@ -148,7 +148,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         {
             try
             {
-                if (!await reader.WaitToReadAsync(_shutdown.Token)) break;
+                if (!await reader.WaitToReadAsync(_shutdown.Token).ConfigureAwait(false)) break;
 
                 var deadline = DateTime.UtcNow + FlushInterval;
                 while (batch.Count < BatchSize && DateTime.UtcNow < deadline && reader.TryRead(out var item))
@@ -156,7 +156,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
 
                 if (batch.Count == 0)
                 {
-                    await Task.Delay(FlushInterval, _shutdown.Token);
+                    await Task.Delay(FlushInterval, _shutdown.Token).ConfigureAwait(false);
                     continue;
                 }
 
@@ -174,7 +174,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
                 Diagnostics.Log.Warn("event store write failed: " + ex.Message);
                 Interlocked.Add(ref _pending, -batch.Count);
                 batch.Clear();
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
             }
         }
 
@@ -374,7 +374,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
             command.Parameters.AddWithValue("$start", Stamp(startTime));
 
             if (command.ExecuteNonQuery() > 0) return;
-            await Task.Delay(250);
+            await Task.Delay(250).ConfigureAwait(false);
         }
     }
 
@@ -510,14 +510,45 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
         return evt;
     }
 
-    public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+    private static readonly TimeSpan WriterStopBudget = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// The window closes the store on its own thread, so this has to finish without needing that
+    /// thread back. Awaiting the writer through the dispatcher left the two waiting on each other
+    /// and the app could only be ended from Task Manager.
+    /// </summary>
+    public void Dispose()
+    {
+        StopWriting();
+
+        var stopped = true;
+        try { stopped = _writer.Wait(WriterStopBudget); }
+        catch { /* on the way out */ }
+
+        Release(stopped);
+    }
 
     public async ValueTask DisposeAsync()
     {
+        StopWriting();
+
+        var stopped = true;
+        try { await _writer.ConfigureAwait(false); }
+        catch { /* on the way out */ }
+
+        Release(stopped);
+    }
+
+    private void StopWriting()
+    {
         _queue.Writer.TryComplete();
         _shutdown.CancelAfter(TimeSpan.FromSeconds(3));
-        try { await _writer; } catch { /* shutdown */ }
-        _shutdown.Dispose();
+    }
+
+    /// <summary>The token source stays alive if the writer outlived its budget - it still reads it.</summary>
+    private void Release(bool writerStopped)
+    {
+        if (writerStopped) _shutdown.Dispose();
         SqliteConnection.ClearAllPools();
     }
 }
