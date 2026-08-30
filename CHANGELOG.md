@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1
 
 - **`WYMCMD_HOME`**: point the database, rules, settings, log and traces at a folder of your
   choosing — a stick, a folder for one investigation, a sandbox that gets thrown away afterwards.
