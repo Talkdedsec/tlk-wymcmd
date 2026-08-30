@@ -31,7 +31,9 @@ public static class AttackMap
         [LaunchSourceKind.LogonScript] = new("T1037.001", "Logon Script (Windows)"),
         [LaunchSourceKind.OfficeMacro] = new("T1204.002", "Malicious File"),
         [LaunchSourceKind.BrowserOrDownload] = new("T1204.002", "Malicious File"),
-        [LaunchSourceKind.RemoteAccess] = new("T1021", "Remote Services")
+        [LaunchSourceKind.RemoteAccess] = new("T1021", "Remote Services"),
+        [LaunchSourceKind.WinlogonHook] = new("T1547.004", "Winlogon Helper DLL"),
+        [LaunchSourceKind.ComServer] = new("T1546.015", "Component Object Model Hijacking")
     };
 
     private static readonly (CommandTraits Trait, AttackTechnique Technique)[] ByTrait =

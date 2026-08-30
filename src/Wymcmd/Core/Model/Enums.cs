@@ -54,7 +54,11 @@ public enum LaunchSourceKind
     Terminal,
     DeveloperTool,
     SystemComponent,
-    RemoteAccess
+    RemoteAccess,
+
+    // Appended, never reordered: the numbers are in the database.
+    WinlogonHook,
+    ComServer
 }
 
 public enum SignatureStatus
