@@ -25,8 +25,16 @@ public static class AppPaths
     public const string BlackBoxSystemSessionName = "WymcmdBlackBoxSystem";
     public const string LiveSessionName = "WymcmdLive";
 
+    /// <summary>Point everything at a folder of your choosing - a stick, a case folder, a sandbox.</summary>
+    public const string HomeVariable = "WYMCMD_HOME";
+
     private static string ResolveRoot()
     {
+        // An explicit home wins over everything, so the tool can be pointed at a USB stick or a
+        // folder for one investigation without touching the machine's own data.
+        if (Environment.GetEnvironmentVariable(HomeVariable) is { Length: > 0 } home && TryPrepare(home))
+            return home;
+
         // Only use the machine-wide folder when it already exists and lets us write:
         // creating it properly (with an ACE for Users) is an explicit, elevated setup step.
         var shared = SharedRoot.Path;

@@ -212,8 +212,11 @@ each field came from. Nothing is invented to fill a gap.
 ## Privacy
 
 Everything stays on the machine: one SQLite database under `%ProgramData%\wymcmd`
-(`%LOCALAPPDATA%\wymcmd` when not elevated). No telemetry, no network calls, no auto-update.
-The optional hash lookup is off by default and never turns itself on.
+(`%LOCALAPPDATA%\wymcmd` when not elevated). No telemetry, no network calls, no auto-update —
+the binary contains no HTTP client at all, so there is nothing to switch off.
+
+Set `WYMCMD_HOME` and everything lives where you point it instead: a stick, a folder for one
+investigation, a sandbox that gets thrown away afterwards.
 
 It also forgets on purpose: 30 days and 256 MB by default, both in `settings.json`, applied in
 the background and on demand with `wymcmd prune`. The black box traces are capped when they are
