@@ -232,8 +232,15 @@ dışa aktarılan raporlar dahil. `--lang tr` ya da penceredeki EN/TR anahtarı.
 
 ## Kurulum
 
-[Releases](https://github.com/Talkdedsec/tlk-wymcmd/releases) sayfasından zip'i indir, istediğin
-yere aç ve şunu çalıştır:
+[Scoop](https://scoop.sh) ile — güncellemeleri de kendi getirir:
+
+```console
+scoop bucket add tlk https://github.com/Talkdedsec/scoop-tlk
+scoop install tlk/wymcmd
+```
+
+Ya da [Releases](https://github.com/Talkdedsec/tlk-wymcmd/releases) sayfasından zip'i indir,
+istediğin yere aç ve şunu çalıştır:
 
 ```console
 wymcmd install
