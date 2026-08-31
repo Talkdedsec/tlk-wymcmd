@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wymcmd — why did that console window open?</title>
+<meta name="description" content="A console flashed on screen and vanished. wymcmd names the scheduled task, registry key, service or click that started it, reconstructed from what Windows already recorded. Nothing resident.">
+<link rel="canonical" href="https://talkdedsec.github.io/tlk-wymcmd/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="wymcmd">
+<meta property="og:description" content="Which scheduled task, registry key, service or click opened that console window — answered after the fact, with nothing running in the background.">
+<meta property="og:image" content="https://talkdedsec.github.io/tlk-wymcmd/img/gui-en.png">
+<meta property="og:url" content="https://talkdedsec.github.io/tlk-wymcmd/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230d1117'/><path d='M8 11l5 5-5 5' stroke='%2314e39a' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M17 21h7' stroke='%2314e39a' stroke-width='2.6' stroke-linecap='round'/></svg>">
+<style>
+  :root{
+    --bg:#080a0d; --panel:#0e1218; --line:#1d242d; --ink:#e6edf3; --mute:#8b96a4;
+    --accent:#14e39a; --amber:#f5a623; --radius:14px;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--sans);
+       -webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(58rem 30rem at 82% -14%,rgba(20,227,154,.09),transparent 60%),
+               radial-gradient(44rem 26rem at 4% 4%,rgba(245,166,35,.06),transparent 62%)}
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,kbd{font-family:var(--mono);font-size:.9em}
+
+  header{padding:64px 0 8px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+           color:var(--mute)}
+  h1{font-size:clamp(2.2rem,5.6vw,3.4rem);line-height:1.06;margin:14px 0 0;letter-spacing:-.03em;
+     font-weight:700}
+  h1 em{font-style:normal;color:var(--accent)}
+  .lede{font-size:clamp(1.05rem,2.4vw,1.28rem);color:#c2ccd8;max-width:58ch;margin:20px 0 0}
+  .facts{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 0;padding:0;list-style:none}
+  .facts li{font-family:var(--mono);font-size:12.5px;color:var(--mute);
+            border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#0c1015}
+
+  .cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:30px 0 0}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:15px;
+       padding:13px 22px;border-radius:11px;border:1px solid transparent}
+  .btn-main{background:var(--accent);color:#04120c}
+  .btn-main:hover{background:#3bf0ae;text-decoration:none}
+  .btn-ghost{border-color:var(--line);color:var(--ink);background:#0c1015}
+  .btn-ghost:hover{border-color:#2c3742;text-decoration:none}
+  .cta small{color:var(--mute);font-size:13px;font-family:var(--mono)}
+
+  .term{margin:44px 0 0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+        background:#0a0e13;box-shadow:0 24px 70px -30px rgba(0,0,0,.95)}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:11px 15px;border-bottom:1px solid var(--line);
+            background:#0d1219}
+  .dot{width:10px;height:10px;border-radius:50%;background:#222c36}
+  .term-title{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--mute)}
+  .term pre{margin:0;padding:20px;overflow-x:auto;font-family:var(--mono);font-size:13px;
+            line-height:1.72;color:#c6d2de}
+  .p{color:var(--accent)}
+  .k{color:var(--mute)}
+  .hi{color:#fff;font-weight:600}
+  .warn{color:var(--amber)}
+
+  .shot{margin:24px 0 0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+        background:var(--panel)}
+  .shot img{display:block;width:100%;height:auto}
+  figcaption{color:var(--mute);font-size:13.5px;padding:14px 18px;border-top:1px solid var(--line)}
+
+  section{padding:56px 0 0}
+  h2{font-size:1.45rem;letter-spacing:-.015em;margin:0 0 16px}
+  h3{font-size:1.02rem;margin:0 0 6px;letter-spacing:-.01em}
+  p{margin:0 0 14px;color:#c6d0da}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(248px,1fr))}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--panel)}
+  .card p{margin:0;font-size:14.5px;color:var(--mute);line-height:1.6}
+
+  pre.plain{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+      padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.75;
+      color:#c6d2de}
+  .install{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .install h3{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+              color:var(--mute);margin-bottom:10px}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:600;
+     white-space:nowrap}
+  td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
+  td:nth-child(2){text-align:center;font-family:var(--mono);font-size:13px;white-space:nowrap}
+  td:last-child{color:var(--mute)}
+  .none{color:var(--accent)}
+  .yes{color:var(--amber)}
+
+  .note{border-left:2px solid var(--accent);padding:2px 0 2px 18px;margin:22px 0 0;color:var(--mute);
+        font-size:14.5px}
+  .note strong{color:var(--ink)}
+
+  footer{margin:72px 0 0;border-top:1px solid var(--line);padding:26px 0 60px;color:var(--mute);
+         font-size:14px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+  footer a{color:var(--mute)}
+  footer .sep{opacity:.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Talkdedsec · Windows 10 / 11</div>
+  <h1>A console flashed and vanished. <em>Something</em> opened it.</h1>
+  <p class="lede">Task Manager is already empty by the time you look. Process Monitor tells you
+     <em>that</em> something ran, never <em>why</em>. wymcmd names the scheduled task, registry key,
+     service, document or click behind it — including launches that happened while wymcmd itself
+     was not running.</p>
+  <ul class="facts">
+    <li>nothing resident</li>
+    <li>no telemetry</li>
+    <li>no account</li>
+    <li>no cloud</li>
+    <li>CLI + window</li>
+    <li>EN / TR</li>
+  </ul>
+  <div class="cta">
+    <a class="btn btn-main" href="https://github.com/Talkdedsec/tlk-wymcmd/releases/latest">Download for Windows</a>
+    <a class="btn btn-ghost" href="https://github.com/Talkdedsec/tlk-wymcmd">Source on GitHub</a>
+    <small>free · x64 and arm64</small>
+  </div>
+</header>
+
+<div class="term">
+  <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="term-title">wymcmd why last</span></div>
+<pre><span class="k">&gt;</span> <span class="p">wymcmd why last</span>
+
+<span class="hi">cmd.exe</span>  (pid 24188)
+<span class="p">Scheduled task \Microsoft\Windows\UpdateOrchestrator\Reboot started it -&gt; svchost.exe -&gt; cmd.exe</span>
+
+started        Monday, 24 August 2026 03:11:04  (7 hours ago)
+lifetime       42 ms
+image          C:\Windows\System32\cmd.exe
+command        cmd.exe /c shutdown /r /f /t 0
+signature      signed by Microsoft Windows
+window         <span class="warn">hidden / no window</span>
+launched by    Scheduled Task: \Microsoft\Windows\UpdateOrchestrator\Reboot
+confidence     certain
+evidence       BlackBox, SecurityLog, TaskLog
+
+<span class="k">execution history</span>
+  Prefetch     24.08.2026 03:11  (7 hours ago)
+  UserAssist   21.08.2026 19:40  (3 days ago)  12 runs
+
+risk: 25/100
+  <span class="warn">+25</span>  no visible window</pre>
+</div>
+
+<figure class="shot">
+  <img src="img/gui-en.png" alt="The wymcmd window showing live launches, the ancestor chain, the decoded command line and a risk score.">
+  <figcaption>The same engine with a different face. <strong>Timeline</strong> rebuilds a moment from
+    every source, <strong>Rules</strong> shows how often each rule would have fired and can write one
+    from the selected launch, <strong>Stats</strong> reads the patterns out of your history,
+    <strong>Sources</strong> turns the Windows recording on or off, and <strong>Export</strong> writes
+    what you are looking at as CSV, JSON lines or a report.</figcaption>
+</figure>
+
+<section>
+  <h2>Nothing runs in the background</h2>
+  <p>That is a design decision, not a missing feature. There are five ways for wymcmd to know what
+     happened, and only the last one is a resident process — it ships disabled.</p>
+  <table>
+    <thead><tr><th>Mode</th><th>Resident</th><th>What you get</th></tr></thead>
+    <tbody>
+      <tr><td>Forensic <span style="font-weight:400;color:var(--mute)">— default</span></td>
+          <td class="none">none</td>
+          <td>Rebuilds history from what Windows already recorded: Security log 4688/4689, Sysmon,
+              Task Scheduler, PowerShell script blocks, Prefetch, BAM, UserAssist</td></tr>
+      <tr><td>Black box <span style="font-weight:400;color:var(--mute)">— recommended</span></td>
+          <td class="none">none</td>
+          <td>Two ETW AutoLoggers that <em>Windows itself</em> runs, writing into capped circular
+              files — command lines included. No process of ours in memory, no CPU while idle, and it
+              starts recording the moment you enable it</td></tr>
+      <tr><td>Live</td><td class="none">only while open</td>
+          <td>Real-time kernel tracing while <code>wymcmd watch</code> or the window is open</td></tr>
+      <tr><td>Trap</td><td class="none">until it expires</td>
+          <td>“Catch it if it happens again”, with a deadline; it closes itself</td></tr>
+      <tr><td>Watchdog service</td><td class="yes">yes, opt-in</td>
+          <td>Round-the-clock rule enforcement, for people who want it</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Nothing is enabled behind your back. <code>sources enable</code> and
+    <code>blackbox on</code> are the only commands that change the machine, both are explicit, and
+    <code>wymcmd uninstall --purge</code> puts everything back.</p>
+</section>
+
+<section>
+  <h2>What it figures out</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Who started it</h3>
+      <p>The full ancestor chain, including parents that exited long ago — resolved to the real
+         cause rather than stopping at <code>svchost.exe</code>.</p>
+    </div>
+    <div class="card">
+      <h3>Why it started</h3>
+      <p>Scheduled task by name, Run key, Startup folder, service, WMI subscription, Image File
+         Execution Options, installer, Office document, browser download, a terminal, or you
+         double-clicking.</p>
+    </div>
+    <div class="card">
+      <h3>What it actually ran</h3>
+      <p><code>-EncodedCommand</code> decoded into the real script, <code>cmd /c</code> unwrapped,
+         the script block recovered from PowerShell logging.</p>
+    </div>
+    <div class="card">
+      <h3>Whether it had a window</h3>
+      <p>A console with no window is the strongest signal something did not want to be seen.
+         Catalog-signed Windows binaries are recognised properly, so system tools are never
+         mislabelled as unsigned.</p>
+    </div>
+    <div class="card">
+      <h3>Whether it is a regular here</h3>
+      <p>Prefetch gives the run count and the last eight run times, BAM the exact last run, AmCache
+         the day this machine first catalogued the file and its SHA-1.</p>
+    </div>
+    <div class="card">
+      <h3>How worried to be</h3>
+      <p>A 0–100 score that always shows its reasons, plus the MITRE ATT&amp;CK techniques the
+         evidence already establishes. Nothing is inferred — a technique appears only where the
+         finding behind it is in hand.</p>
+    </div>
+  </div>
+  <p class="note"><strong>Every result carries its sources.</strong> A single-artifact guess and a
+    corroborated conclusion do not look the same, so you can tell how much weight a verdict carries
+    before you act on it.</p>
+</section>
+
+<section>
+  <h2>Quickstart</h2>
+<pre class="plain">wymcmd install             <span class="k"># put it on your PATH (per user, no administrator)</span>
+wymcmd doctor              <span class="k"># see what is available, and what is missing</span>
+wymcmd sources enable      <span class="k"># one-time, elevated, fully reversible</span>
+wymcmd blackbox on         <span class="k"># optional: never miss anything again, nothing resident</span>
+wymcmd why last            <span class="k"># what opened that console?</span>
+wymcmd                     <span class="k"># the window</span></pre>
+</section>
+
+<section>
+  <h2>Install</h2>
+  <div class="install">
+    <div>
+      <h3>Scoop</h3>
+      <pre class="plain">scoop bucket add tlk https://github.com/Talkdedsec/scoop-tlk
+scoop install tlk/wymcmd</pre>
+    </div>
+    <div>
+      <h3>Or the zip</h3>
+      <pre class="plain">Grab the x64 or arm64 zip from
+Releases, unpack, run wymcmd.</pre>
+    </div>
+  </div>
+  <p class="note"><strong>SmartScreen will warn you the first time.</strong> The binary is not
+    code-signed. Every release ships SHA-256 files, and every release after v0.3.1 carries a GitHub
+    build attestation tying the download to the workflow run that produced it:</p>
+  <pre class="plain">gh attestation verify wymcmd.exe --owner Talkdedsec</pre>
+</section>
+
+<section>
+  <h2>Licence</h2>
+  <p>Free for personal and internal use, on any machine you own or administer. The source is
+     published so the tool can be audited — that is the point of a program that reads your event
+     logs — but publishing it does not make it open source, and redistribution and resale are not
+     granted. The full terms are in
+     <a href="https://github.com/Talkdedsec/tlk-wymcmd/blob/main/LICENSE">LICENSE</a>.</p>
+</section>
+
+<footer>
+  <span>wymcmd · Why My CMD Opened</span>
+  <span class="sep">·</span>
+  <a href="https://github.com/Talkdedsec/tlk-wymcmd">GitHub</a>
+  <span class="sep">·</span>
+  <a href="https://github.com/Talkdedsec/tlk-wymcmd/releases">Releases</a>
+  <span class="sep">·</span>
+  <a href="https://github.com/Talkdedsec/tlk-wymcmd/issues">Report a bug</a>
+  <span class="sep">·</span>
+  <a href="https://talkdedsec.com">talkdedsec.com</a>
+</footer>
+
+</div>
+</body>
+</html>
