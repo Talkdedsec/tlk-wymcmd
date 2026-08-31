@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -99,6 +101,15 @@ jobs:
             publish/wymcmd.com
             wymcmd-*.zip
             *.sha256
+
+      - name: Provenance for the published binaries
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            publish/wymcmd.exe
+            publish/wymcmd.com
+            wymcmd-*.zip
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
