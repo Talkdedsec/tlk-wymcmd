@@ -236,7 +236,14 @@ text, error messages and exported reports. `--lang tr`, or the EN/TR switch in t
 
 ## Install
 
-Grab the zip from [releases](https://github.com/Talkdedsec/tlk-wymcmd/releases), unpack it
+With [Scoop](https://scoop.sh), which also keeps it updated:
+
+```console
+scoop bucket add tlk https://github.com/Talkdedsec/scoop-tlk
+scoop install tlk/wymcmd
+```
+
+Or grab the zip from [releases](https://github.com/Talkdedsec/tlk-wymcmd/releases), unpack it
 anywhere, and run:
 
 ```console
