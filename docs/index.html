@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>wymcmd — why did that console window open?</title>
+<title data-tr="wymcmd — o konsol penceresi neden açıldı?">wymcmd — why did that console window open?</title>
 <meta name="description" content="A console flashed on screen and vanished. wymcmd names the scheduled task, registry key, service or click that started it, reconstructed from what Windows already recorded. Nothing resident.">
 <link rel="canonical" href="https://talkdedsec.github.io/tlk-wymcmd/">
 <meta property="og:type" content="website">
@@ -104,29 +104,35 @@
   footer a{color:var(--mute)}
   footer .sep{opacity:.4}
 </style>
+<style>
+  .lang-toggle{position:fixed;top:14px;right:14px;z-index:20;font:600 12px/1 var(--mono,ui-monospace,monospace);
+    letter-spacing:.08em;padding:9px 12px;border-radius:999px;border:1px solid var(--line,#2a2a2a);
+    background:var(--panel,#111);color:var(--ink,#eee);cursor:pointer}
+  .lang-toggle:hover{border-color:var(--accent,#888)}
+</style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
   <div class="eyebrow">Talkdedsec · Windows 10 / 11</div>
-  <h1>A console flashed and vanished. <em>Something</em> opened it.</h1>
-  <p class="lede">Task Manager is already empty by the time you look. Process Monitor tells you
+  <h1 data-tr="Bir konsol parladı ve kayboldu. Onu &lt;em&gt;bir şey&lt;/em&gt; açtı.">A console flashed and vanished. <em>Something</em> opened it.</h1>
+  <p class="lede" data-tr="Sen bakana kadar Görev Yöneticisi çoktan boşalmış oluyor. Process Monitor bir şeyin çalıştığını &lt;em&gt;söylüyor&lt;/em&gt;, &lt;em&gt;neden&lt;/em&gt; çalıştığını asla söylemiyor. wymcmd arkasındaki zamanlanmış görevi, kayıt defteri anahtarını, servisi, belgeyi ya da tıklamayı adıyla söylüyor — wymcmd&#x27;nin kendisi çalışmıyorken olan açılışlar dahil.">Task Manager is already empty by the time you look. Process Monitor tells you
      <em>that</em> something ran, never <em>why</em>. wymcmd names the scheduled task, registry key,
      service, document or click behind it — including launches that happened while wymcmd itself
      was not running.</p>
   <ul class="facts">
-    <li>nothing resident</li>
-    <li>no telemetry</li>
-    <li>no account</li>
-    <li>no cloud</li>
-    <li>CLI + window</li>
+    <li data-tr="arka planda süreç yok">nothing resident</li>
+    <li data-tr="telemetri yok">no telemetry</li>
+    <li data-tr="hesap yok">no account</li>
+    <li data-tr="bulut yok">no cloud</li>
+    <li data-tr="CLI + pencere">CLI + window</li>
     <li>EN / TR</li>
   </ul>
   <div class="cta">
-    <a class="btn btn-main" href="https://github.com/Talkdedsec/tlk-wymcmd/releases/latest">Download for Windows</a>
-    <a class="btn btn-ghost" href="https://github.com/Talkdedsec/tlk-wymcmd">Source on GitHub</a>
-    <small>free · x64 and arm64</small>
+    <a class="btn btn-main" href="https://github.com/Talkdedsec/tlk-wymcmd/releases/latest" data-tr="Windows için indir">Download for Windows</a>
+    <a class="btn btn-ghost" href="https://github.com/Talkdedsec/tlk-wymcmd" data-tr="GitHub&#x27;da kaynak kodu">Source on GitHub</a>
+    <small data-tr="ücretsiz · x64 ve arm64">free · x64 and arm64</small>
   </div>
 </header>
 
@@ -157,8 +163,8 @@ risk: 25/100
 </div>
 
 <figure class="shot">
-  <img src="img/gui-en.png" alt="The wymcmd window showing live launches, the ancestor chain, the decoded command line and a risk score.">
-  <figcaption>The same engine with a different face. <strong>Timeline</strong> rebuilds a moment from
+  <img src="img/gui-en.png" alt="The wymcmd window showing live launches, the ancestor chain, the decoded command line and a risk score." data-tr-src="img/gui-tr.png" data-tr-alt="wymcmd penceresi: canlı açılışlar, üst zincir, çözülmüş komut satırı ve risk puanı.">
+  <figcaption data-tr="Aynı motor, farklı bir yüz. &lt;strong&gt;Zaman çizelgesi&lt;/strong&gt; bir anı tüm kaynaklardan yeniden kuruyor, &lt;strong&gt;Kurallar&lt;/strong&gt; her kuralın kaç kez tetiklenmiş olacağını gösteriyor ve seçili açılıştan yeni bir kural yazabiliyor, &lt;strong&gt;İstatistikler&lt;/strong&gt; geçmişindeki kalıpları çıkarıyor, &lt;strong&gt;Kaynaklar&lt;/strong&gt; Windows kaydını açıp kapatıyor, &lt;strong&gt;Dışa aktar&lt;/strong&gt; da baktığın şeyi CSV, JSON satırları ya da rapor olarak yazıyor.">The same engine with a different face. <strong>Timeline</strong> rebuilds a moment from
     every source, <strong>Rules</strong> shows how often each rule would have fired and can write one
     from the selected launch, <strong>Stats</strong> reads the patterns out of your history,
     <strong>Sources</strong> turns the Windows recording on or off, and <strong>Export</strong> writes
@@ -166,88 +172,88 @@ risk: 25/100
 </figure>
 
 <section>
-  <h2>Nothing runs in the background</h2>
-  <p>That is a design decision, not a missing feature. There are five ways for wymcmd to know what
+  <h2 data-tr="Arka planda hiçbir şey çalışmıyor">Nothing runs in the background</h2>
+  <p data-tr="Bu eksik bir özellik değil, bir tasarım kararı. wymcmd&#x27;nin ne olduğunu öğrenmesinin beş yolu var ve yalnızca sonuncusu arka planda çalışan bir süreç — o da kapalı geliyor.">That is a design decision, not a missing feature. There are five ways for wymcmd to know what
      happened, and only the last one is a resident process — it ships disabled.</p>
   <table>
-    <thead><tr><th>Mode</th><th>Resident</th><th>What you get</th></tr></thead>
+    <thead><tr><th data-tr="Mod">Mode</th><th data-tr="Arka planda">Resident</th><th data-tr="Ne kazanırsın">What you get</th></tr></thead>
     <tbody>
-      <tr><td>Forensic <span style="font-weight:400;color:var(--mute)">— default</span></td>
-          <td class="none">none</td>
-          <td>Rebuilds history from what Windows already recorded: Security log 4688/4689, Sysmon,
+      <tr><td data-tr="Adli inceleme &lt;span style=&quot;font-weight:400;color:var(--mute)&quot;&gt;— varsayılan&lt;/span&gt;">Forensic <span style="font-weight:400;color:var(--mute)">— default</span></td>
+          <td class="none" data-tr="yok">none</td>
+          <td data-tr="Geçmişi Windows&#x27;un zaten kaydettiklerinden yeniden kuruyor: Security günlüğü 4688/4689, Sysmon, Görev Zamanlayıcı, PowerShell betik blokları, Prefetch, BAM, UserAssist">Rebuilds history from what Windows already recorded: Security log 4688/4689, Sysmon,
               Task Scheduler, PowerShell script blocks, Prefetch, BAM, UserAssist</td></tr>
-      <tr><td>Black box <span style="font-weight:400;color:var(--mute)">— recommended</span></td>
-          <td class="none">none</td>
-          <td>Two ETW AutoLoggers that <em>Windows itself</em> runs, writing into capped circular
+      <tr><td data-tr="Kara kutu &lt;span style=&quot;font-weight:400;color:var(--mute)&quot;&gt;— önerilen&lt;/span&gt;">Black box <span style="font-weight:400;color:var(--mute)">— recommended</span></td>
+          <td class="none" data-tr="yok">none</td>
+          <td data-tr="&lt;em&gt;Windows&#x27;un kendisinin&lt;/em&gt; çalıştırdığı iki ETW AutoLogger, boyutu sınırlı döngüsel dosyalara yazıyor — komut satırları dahil. Bellekte bizden hiçbir süreç yok, boştayken işlemci kullanımı yok ve açtığın anda kayda başlıyor">Two ETW AutoLoggers that <em>Windows itself</em> runs, writing into capped circular
               files — command lines included. No process of ours in memory, no CPU while idle, and it
               starts recording the moment you enable it</td></tr>
-      <tr><td>Live</td><td class="none">only while open</td>
-          <td>Real-time kernel tracing while <code>wymcmd watch</code> or the window is open</td></tr>
-      <tr><td>Trap</td><td class="none">until it expires</td>
-          <td>“Catch it if it happens again”, with a deadline; it closes itself</td></tr>
-      <tr><td>Watchdog service</td><td class="yes">yes, opt-in</td>
-          <td>Round-the-clock rule enforcement, for people who want it</td></tr>
+      <tr><td data-tr="Canlı">Live</td><td class="none" data-tr="yalnızca açıkken">only while open</td>
+          <td data-tr="&lt;code&gt;wymcmd watch&lt;/code&gt; ya da pencere açıkken gerçek zamanlı çekirdek izleme">Real-time kernel tracing while <code>wymcmd watch</code> or the window is open</td></tr>
+      <tr><td data-tr="Tuzak">Trap</td><td class="none" data-tr="süresi dolana kadar">until it expires</td>
+          <td data-tr="“Bir daha olursa yakala”, süreli; süresi dolunca kendini kapatıyor">“Catch it if it happens again”, with a deadline; it closes itself</td></tr>
+      <tr><td data-tr="Bekçi servisi">Watchdog service</td><td class="yes" data-tr="evet, isteğe bağlı">yes, opt-in</td>
+          <td data-tr="Bunu isteyenler için günün her saati kural uygulama">Round-the-clock rule enforcement, for people who want it</td></tr>
     </tbody>
   </table>
-  <p class="note">Nothing is enabled behind your back. <code>sources enable</code> and
+  <p class="note" data-tr="Senden habersiz hiçbir şey açılmıyor. Makinede değişiklik yapan tek komutlar &lt;code&gt;sources enable&lt;/code&gt; ve &lt;code&gt;blackbox on&lt;/code&gt;; ikisi de açıkça çalıştırılıyor ve &lt;code&gt;wymcmd uninstall --purge&lt;/code&gt; her şeyi eski haline getiriyor.">Nothing is enabled behind your back. <code>sources enable</code> and
     <code>blackbox on</code> are the only commands that change the machine, both are explicit, and
     <code>wymcmd uninstall --purge</code> puts everything back.</p>
 </section>
 
 <section>
-  <h2>What it figures out</h2>
+  <h2 data-tr="Neleri çözüyor">What it figures out</h2>
   <div class="grid">
     <div class="card">
-      <h3>Who started it</h3>
-      <p>The full ancestor chain, including parents that exited long ago — resolved to the real
+      <h3 data-tr="Onu kim başlattı">Who started it</h3>
+      <p data-tr="Çoktan kapanmış üst süreçler dahil tüm üst zincir — &lt;code&gt;svchost.exe&lt;/code&gt;&#x27;de durmak yerine gerçek sebebe kadar çözülüyor.">The full ancestor chain, including parents that exited long ago — resolved to the real
          cause rather than stopping at <code>svchost.exe</code>.</p>
     </div>
     <div class="card">
-      <h3>Why it started</h3>
-      <p>Scheduled task by name, Run key, Startup folder, service, WMI subscription, Image File
+      <h3 data-tr="Neden başladı">Why it started</h3>
+      <p data-tr="Adıyla zamanlanmış görev, Run anahtarı, Başlangıç klasörü, servis, WMI aboneliği, Image File Execution Options, yükleyici, Office belgesi, tarayıcı indirmesi, bir terminal ya da senin çift tıklaman.">Scheduled task by name, Run key, Startup folder, service, WMI subscription, Image File
          Execution Options, installer, Office document, browser download, a terminal, or you
          double-clicking.</p>
     </div>
     <div class="card">
-      <h3>What it actually ran</h3>
-      <p><code>-EncodedCommand</code> decoded into the real script, <code>cmd /c</code> unwrapped,
+      <h3 data-tr="Gerçekte neyi çalıştırdı">What it actually ran</h3>
+      <p data-tr="&lt;code&gt;-EncodedCommand&lt;/code&gt; çözülüp gerçek betiğe dönüştürülüyor, &lt;code&gt;cmd /c&lt;/code&gt; açılıyor, betik bloğu PowerShell günlüğünden geri alınıyor."><code>-EncodedCommand</code> decoded into the real script, <code>cmd /c</code> unwrapped,
          the script block recovered from PowerShell logging.</p>
     </div>
     <div class="card">
-      <h3>Whether it had a window</h3>
-      <p>A console with no window is the strongest signal something did not want to be seen.
+      <h3 data-tr="Penceresi var mıydı">Whether it had a window</h3>
+      <p data-tr="Penceresiz bir konsol, bir şeyin görünmek istemediğinin en güçlü işareti. Katalogla imzalanmış Windows dosyaları doğru tanınıyor; sistem araçları asla yanlışlıkla imzasız diye işaretlenmiyor.">A console with no window is the strongest signal something did not want to be seen.
          Catalog-signed Windows binaries are recognised properly, so system tools are never
          mislabelled as unsigned.</p>
     </div>
     <div class="card">
-      <h3>Whether it is a regular here</h3>
-      <p>Prefetch gives the run count and the last eight run times, BAM the exact last run, AmCache
+      <h3 data-tr="Burada alışıldık mı">Whether it is a regular here</h3>
+      <p data-tr="Prefetch çalışma sayısını ve son sekiz çalışma zamanını, BAM son çalışmanın tam anını, AmCache da bu makinenin dosyayı ilk kez kataloğa aldığı günü ve SHA-1 değerini veriyor.">Prefetch gives the run count and the last eight run times, BAM the exact last run, AmCache
          the day this machine first catalogued the file and its SHA-1.</p>
     </div>
     <div class="card">
-      <h3>How worried to be</h3>
-      <p>A 0–100 score that always shows its reasons, plus the MITRE ATT&amp;CK techniques the
+      <h3 data-tr="Ne kadar endişelenmeli">How worried to be</h3>
+      <p data-tr="Gerekçelerini her zaman gösteren 0–100 arası bir puan ve kanıtların zaten ortaya koyduğu MITRE ATT&amp;amp;CK teknikleri. Hiçbir şey tahmin edilmiyor — bir teknik ancak arkasındaki bulgu eldeyse görünüyor.">A 0–100 score that always shows its reasons, plus the MITRE ATT&amp;CK techniques the
          evidence already establishes. Nothing is inferred — a technique appears only where the
          finding behind it is in hand.</p>
     </div>
   </div>
-  <p class="note"><strong>Every result carries its sources.</strong> A single-artifact guess and a
+  <p class="note" data-tr="&lt;strong&gt;Her sonuç kaynaklarını yanında taşıyor.&lt;/strong&gt; Tek bir iz üzerinden yapılmış bir tahmin ile doğrulanmış bir sonuç aynı görünmüyor; böylece harekete geçmeden önce bir kararın ne kadar ağırlık taşıdığını görebiliyorsun."><strong>Every result carries its sources.</strong> A single-artifact guess and a
     corroborated conclusion do not look the same, so you can tell how much weight a verdict carries
     before you act on it.</p>
 </section>
 
 <section>
-  <h2>Quickstart</h2>
-<pre class="plain">wymcmd install             <span class="k"># put it on your PATH (per user, no administrator)</span>
-wymcmd doctor              <span class="k"># see what is available, and what is missing</span>
-wymcmd sources enable      <span class="k"># one-time, elevated, fully reversible</span>
-wymcmd blackbox on         <span class="k"># optional: never miss anything again, nothing resident</span>
-wymcmd why last            <span class="k"># what opened that console?</span>
-wymcmd                     <span class="k"># the window</span></pre>
+  <h2 data-tr="Hızlı başlangıç">Quickstart</h2>
+<pre class="plain">wymcmd install             <span class="k" data-tr="# PATH&#x27;e ekle (kullanıcı başına, yönetici gerekmez)"># put it on your PATH (per user, no administrator)</span>
+wymcmd doctor              <span class="k" data-tr="# neyin hazır, neyin eksik olduğunu gör"># see what is available, and what is missing</span>
+wymcmd sources enable      <span class="k" data-tr="# bir kerelik, yükseltilmiş, tamamen geri alınabilir"># one-time, elevated, fully reversible</span>
+wymcmd blackbox on         <span class="k" data-tr="# isteğe bağlı: bir daha hiçbir şeyi kaçırma, arka planda süreç yok"># optional: never miss anything again, nothing resident</span>
+wymcmd why last            <span class="k" data-tr="# o konsolu ne açtı?"># what opened that console?</span>
+wymcmd                     <span class="k" data-tr="# pencere"># the window</span></pre>
 </section>
 
 <section>
-  <h2>Install</h2>
+  <h2 data-tr="Kurulum">Install</h2>
   <div class="install">
     <div>
       <h3>Scoop</h3>
@@ -255,20 +261,21 @@ wymcmd                     <span class="k"># the window</span></pre>
 scoop install tlk/wymcmd</pre>
     </div>
     <div>
-      <h3>Or the zip</h3>
-      <pre class="plain">Grab the x64 or arm64 zip from
+      <h3 data-tr="Ya da zip">Or the zip</h3>
+      <pre class="plain" data-tr="x64 ya da arm64 zip&#x27;i Releases&#x27;ten
+indir, aç, wymcmd&#x27;yi çalıştır.">Grab the x64 or arm64 zip from
 Releases, unpack, run wymcmd.</pre>
     </div>
   </div>
-  <p class="note"><strong>SmartScreen will warn you the first time.</strong> The binary is not
+  <p class="note" data-tr="&lt;strong&gt;SmartScreen ilk seferde uyaracak.&lt;/strong&gt; Exe kod imzalı değil. Her sürümle SHA-256 dosyaları geliyor; v0.3.1&#x27;den sonraki her sürümde ayrıca indirdiğin dosyayı onu üreten iş akışı çalışmasına bağlayan bir GitHub build attestation&#x27;ı var:"><strong>SmartScreen will warn you the first time.</strong> The binary is not
     code-signed. Every release ships SHA-256 files, and every release after v0.3.1 carries a GitHub
     build attestation tying the download to the workflow run that produced it:</p>
   <pre class="plain">gh attestation verify wymcmd.exe --owner Talkdedsec</pre>
 </section>
 
 <section>
-  <h2>Licence</h2>
-  <p>Free for personal and internal use, on any machine you own or administer. The source is
+  <h2 data-tr="Lisans">Licence</h2>
+  <p data-tr="Sahibi ya da yöneticisi olduğun her makinede kişisel ve şirket içi kullanım için ücretsiz. Kaynak kodu, aracın denetlenebilmesi için yayımlanıyor — olay günlüklerini okuyan bir programda asıl mesele bu — ama yayımlamak onu açık kaynak yapmıyor; yeniden dağıtım ve yeniden satış izni verilmiyor. Koşulların tamamı &lt;a href=&quot;https://github.com/Talkdedsec/tlk-wymcmd/blob/main/LICENSE&quot;&gt;LICENSE&lt;/a&gt; dosyasında.">Free for personal and internal use, on any machine you own or administer. The source is
      published so the tool can be audited — that is the point of a program that reads your event
      logs — but publishing it does not make it open source, and redistribution and resale are not
      granted. The full terms are in
@@ -280,13 +287,49 @@ Releases, unpack, run wymcmd.</pre>
   <span class="sep">·</span>
   <a href="https://github.com/Talkdedsec/tlk-wymcmd">GitHub</a>
   <span class="sep">·</span>
-  <a href="https://github.com/Talkdedsec/tlk-wymcmd/releases">Releases</a>
+  <a href="https://github.com/Talkdedsec/tlk-wymcmd/releases" data-tr="Sürümler">Releases</a>
   <span class="sep">·</span>
-  <a href="https://github.com/Talkdedsec/tlk-wymcmd/issues">Report a bug</a>
+  <a href="https://github.com/Talkdedsec/tlk-wymcmd/issues" data-tr="Hata bildir">Report a bug</a>
   <span class="sep">·</span>
   <a href="https://talkdedsec.com">talkdedsec.com</a>
 </footer>
 
 </div>
+<button class="lang-toggle" type="button" hidden></button>
+<script>
+// English is the page's source text; each translated element carries its
+// Turkish in data-tr. Turkish browsers get Turkish until the visitor picks.
+(() => {
+  const KEY = "tlk-wymcmd.language";
+  const root = document.documentElement;
+  const nodes = [...document.querySelectorAll("[data-tr]")];
+  const alts = [...document.querySelectorAll("[data-tr-alt]")];
+  const srcs = [...document.querySelectorAll("[data-tr-src]")];
+  nodes.forEach((n) => (n.dataset.en = n.innerHTML));
+  alts.forEach((n) => (n.dataset.enAlt = n.alt));
+  srcs.forEach((n) => (n.dataset.enSrc = n.getAttribute("src")));
+  const toggle = document.querySelector(".lang-toggle");
+  const apply = (lang) => {
+    root.lang = lang;
+    nodes.forEach((n) => (n.innerHTML = lang === "tr" ? n.dataset.tr : n.dataset.en));
+    alts.forEach((n) => (n.alt = lang === "tr" ? n.dataset.trAlt : n.dataset.enAlt));
+    srcs.forEach((n) => n.setAttribute("src", lang === "tr" ? n.dataset.trSrc : n.dataset.enSrc));
+    toggle.textContent = lang === "tr" ? "EN" : "TR";
+    toggle.lang = lang === "tr" ? "en" : "tr";
+    toggle.setAttribute("aria-label", lang === "tr" ? "Switch to English" : "Türkçeye geç");
+  };
+  let lang = null;
+  try { lang = localStorage.getItem(KEY); } catch {}
+  if (lang !== "en" && lang !== "tr")
+    lang = (navigator.language || "").toLowerCase().startsWith("tr") ? "tr" : "en";
+  apply(lang);
+  toggle.hidden = false;
+  toggle.addEventListener("click", () => {
+    lang = lang === "tr" ? "en" : "tr";
+    try { localStorage.setItem(KEY, lang); } catch {}
+    apply(lang);
+  });
+})();
+</script>
 </body>
 </html>
