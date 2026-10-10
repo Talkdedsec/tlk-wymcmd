@@ -276,7 +276,7 @@ atlayabilirsin.
 
 ```console
 git clone https://github.com/Talkdedsec/tlk-wymcmd
-cd wymcmd
+cd tlk-wymcmd
 dotnet publish src/Wymcmd/Wymcmd.csproj -c Release -o publish
 dotnet publish src/WymcmdShim/WymcmdShim.csproj -c Release -o launcher
 copy launcher\wymcmd-launcher.exe publish\wymcmd.com
