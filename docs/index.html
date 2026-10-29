@@ -103,6 +103,12 @@
          font-size:14px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
   footer a{color:var(--mute)}
   footer .sep{opacity:.4}
+  .replay{margin-left:auto;font:500 12px var(--mono);color:var(--accent);background:none;border:1px solid rgba(20,227,154,.35);border-radius:7px;padding:4px 10px;cursor:pointer}
+  .replay:hover{background:rgba(20,227,154,.08)}
+  .replay:disabled{opacity:.5;cursor:default}
+  .flash{position:fixed;left:50%;top:38%;z-index:100;width:min(560px,86vw);transform:translate(-50%,-50%);background:#0c0c0c;border:1px solid #3a3a3a;box-shadow:0 30px 80px rgba(0,0,0,.7);font:13px Consolas,monospace;color:#cfcfcf;pointer-events:none}
+  .flash b{display:block;padding:6px 10px;background:#1f1f1f;color:#ddd;font-weight:400}
+  .flash span{display:block;padding:10px 12px 40px}
 </style>
 <style>
   .lang-toggle{position:fixed;top:14px;right:14px;z-index:20;font:600 12px/1 var(--mono,ui-monospace,monospace);
@@ -138,7 +144,7 @@
 
 <div class="term">
   <div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>
-    <span class="term-title">wymcmd why last</span></div>
+    <span class="term-title">wymcmd why last</span><button class="replay" type="button" data-tr="&#9654; tekrar yaşat">&#9654; live it again</button></div>
 <pre><span class="k">&gt;</span> <span class="p">wymcmd why last</span>
 
 <span class="hi">cmd.exe</span>  (pid 24188)
@@ -328,6 +334,38 @@ Releases, unpack, run wymcmd.</pre>
     lang = lang === "tr" ? "en" : "tr";
     try { localStorage.setItem(KEY, lang); } catch {}
     apply(lang);
+  });
+})();
+</script>
+<script>
+// Re-live the moment: a console flashes for a few frames, then wymcmd names it.
+(() => {
+  const pre = document.querySelector('.term pre'), btn = document.querySelector('.replay');
+  if (!pre || !btn) return;
+  const lines = pre.innerHTML.split('\n');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let run = 0;
+  btn.addEventListener('click', async () => {
+    const my = ++run;
+    btn.disabled = true;
+    if (!reduce) {
+      const f = document.createElement('div');
+      f.className = 'flash';
+      f.setAttribute('aria-hidden', 'true');
+      f.innerHTML = '<b>C:\\Windows\\System32\\cmd.exe</b><span>C:\\Windows\\system32&gt;_</span>';
+      document.body.append(f);
+      await wait(70);
+      f.remove();
+      await wait(650);
+    }
+    pre.innerHTML = '';
+    for (const l of lines) {
+      if (my !== run) return;
+      pre.innerHTML += (pre.innerHTML ? '\n' : '') + l;
+      if (!reduce) await wait(l.trim() ? 55 : 120);
+    }
+    btn.disabled = false;
   });
 })();
 </script>
