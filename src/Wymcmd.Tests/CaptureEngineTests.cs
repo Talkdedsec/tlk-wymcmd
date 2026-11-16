@@ -25,8 +25,8 @@ public sealed class CaptureEngineTests : IDisposable
         public void Stop() { }
         public void Dispose() { }
 
-        public void Launch(int pid, string image, DateTime when)
-            => Started?.Invoke(new RawStart(pid, 0, 0, image, $"C:\\Windows\\System32\\{image}", image, 1, when, EvidenceSource.Etw));
+        public void Launch(int pid, string image, DateTime when, int parentPid = 0)
+            => Started?.Invoke(new RawStart(pid, parentPid, 0, image, $"C:\\Windows\\System32\\{image}", image, 1, when, EvidenceSource.Etw));
 
         public void Exit(int pid, DateTime when, int code) => Stopped?.Invoke(new RawStop(pid, when, code));
     }
@@ -111,6 +111,46 @@ public sealed class CaptureEngineTests : IDisposable
         finally
         {
             try { hidden.Kill(entireProcessTree: true); } catch { /* already gone */ }
+        }
+    }
+
+    /// <summary>
+    /// Without administrator rights starts arrive in batches, child before parent as often as
+    /// not. The chain has to name the parent anyway, or the answer is "nothing could be attributed".
+    /// </summary>
+    [Fact]
+    public async Task A_child_reported_before_its_parent_still_gets_its_chain()
+    {
+        await using var store = new EventStore(_path);
+        var script = new Script();
+        await using var engine = new CaptureEngine(store, new ProcessTree(), Attribution(), collector: script);
+
+        var seen = new TaskCompletionSource<ProcEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.Observed += evt => { if (evt.Pid == 910_000) seen.TrySetResult(evt); };
+        engine.Start();
+
+        // Started after the engine took its snapshot, and never announced through the collector.
+        using var parent = Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 6 127.0.0.1 >nul")
+        {
+            UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        })!;
+
+        try
+        {
+            await Task.Delay(300);
+            script.Launch(910_000, "child.exe", DateTime.Now, parent.Id);
+
+            var winner = await Task.WhenAny(seen.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+            Assert.Same(seen.Task, winner);
+
+            var evt = await seen.Task;
+            Assert.Equal("cmd.exe", evt.ParentImageName, ignoreCase: true);
+            Assert.Equal("cmd.exe", evt.Chain[0].ImageName, ignoreCase: true);
+        }
+        finally
+        {
+            try { parent.Kill(entireProcessTree: true); } catch { /* already gone */ }
         }
     }
 

@@ -214,7 +214,7 @@ public sealed class CaptureEngine : IAsyncDisposable
         });
 
         var (sid, user) = ProcessQuery.User(raw.Pid);
-        var parent = _tree.Resolve(raw.ParentPid, raw.TimeStamp);
+        var parent = _tree.Resolve(raw.ParentPid, raw.TimeStamp) ?? ReadParent(raw);
 
         var evt = new ProcEvent
         {
@@ -246,6 +246,31 @@ public sealed class CaptureEngine : IAsyncDisposable
         _attribution.Attribute(evt);
         RiskScorer.Score(evt, decoded.Traits);
         return evt;
+    }
+
+    /// <summary>
+    /// The polling collector hands over a batch of starts in no particular order, so a child can
+    /// arrive before its parent and the chain ended at an unnamed pid. The parent is usually still
+    /// running at that point: read it directly. A start time later than the child's means the pid
+    /// has been reused and this is somebody else.
+    /// </summary>
+    private ProcRecord? ReadParent(RawStart raw)
+    {
+        if (raw.ParentPid <= 4 || ProcessQuery.ImagePath(raw.ParentPid) is not { Length: > 0 } path) return null;
+
+        var started = ProcessQuery.StartTime(raw.ParentPid);
+        if (started is null || started > raw.TimeStamp.AddSeconds(2)) return null;
+
+        return _tree.Add(new ProcRecord
+        {
+            Pid = raw.ParentPid,
+            ParentPid = ProcessQuery.ParentPid(raw.ParentPid) ?? 0,
+            ImageName = Path.GetFileName(path),
+            ImagePath = path,
+            CommandLine = ProcessQuery.CommandLine(raw.ParentPid) ?? "",
+            StartTime = started.Value,
+            SessionId = ProcessQuery.SessionId(raw.ParentPid) ?? 0
+        });
     }
 
     /// <summary>
