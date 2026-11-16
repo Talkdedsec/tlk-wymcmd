@@ -43,6 +43,39 @@ public class AutostartIndexTests
         Assert.All(Built().Entries, entry => Assert.False(string.IsNullOrWhiteSpace(entry.Location)));
     }
 
+    /// <summary>
+    /// Windows ships an Active Setup entry whose command is the single letter "U". Matching by
+    /// containment credited it with every launch that had a u anywhere in its command line.
+    /// </summary>
+    [Fact]
+    public void A_one_letter_command_does_not_claim_every_launch()
+    {
+        var index = new AutostartIndex();
+        index.Seed(
+        [
+            new AutostartEntry(LaunchSourceKind.ActiveSetup, "Windows Desktop Update", "Active Setup", "U", null),
+            new AutostartEntry(LaunchSourceKind.ActiveSetup, "Themes Setup", "Active Setup", "/UserInstall", null)
+        ]);
+
+        Assert.Null(index.Match(@"C:\Windows\System32\cmd.exe", "cmd.exe /c ping -n 5 127.0.0.1 >nul"));
+        Assert.Null(index.Match(@"C:\Windows\System32\rundll32.exe", "rundll32.exe /UserInstall"));
+    }
+
+    [Fact]
+    public void A_registered_command_still_claims_the_launch_it_describes()
+    {
+        var index = new AutostartIndex();
+        index.Seed(
+        [
+            new AutostartEntry(LaunchSourceKind.ScheduledTask, @"\nightly", "Task Scheduler",
+                @"wscript.exe //B C:\Jobs\nightly.vbs", "wscript.exe")
+        ]);
+
+        var match = index.Match(@"C:\Windows\System32\wscript.exe", @"""C:\Windows\System32\wscript.exe"" //B C:\Jobs\nightly.vbs");
+
+        Assert.Equal(@"\nightly", match?.Name);
+    }
+
     /// <summary>The index is asked for on the UI thread when a launch needs explaining.</summary>
     [Fact]
     public void Rebuilding_the_whole_index_stays_quick()

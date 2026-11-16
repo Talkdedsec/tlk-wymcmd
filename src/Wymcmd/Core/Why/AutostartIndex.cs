@@ -94,6 +94,9 @@ public sealed class AutostartIndex
         return bestScore >= 2 ? best : null;
     }
 
+    /// <summary>"cmd.exe" is seven characters; anything shorter than a file name plus a switch is not evidence.</summary>
+    private const int MinimumCommand = 8;
+
     private static int ScoreMatch(AutostartEntry entry, string image, string fullImage, string commandLine)
     {
         var target = Normalize(entry.TargetImage ?? "");
@@ -106,11 +109,14 @@ public sealed class AutostartIndex
             else if (Normalize(Path.GetFileName(entry.TargetImage ?? "")) == image) score += 2;
         }
 
-        if (command.Length > 0 && commandLine.Length > 0)
+        // One text inside the other only means something when the inner one is long enough to be
+        // a command. Windows ships an Active Setup entry whose whole command is "U": every command
+        // line with a u in it "contained" it, and the launch was credited to Windows Desktop Update.
+        if (command.Length >= MinimumCommand && commandLine.Length > 0)
         {
             var normalizedCommandLine = Normalize(commandLine);
-            if (normalizedCommandLine.Contains(command)) score += 3;
-            else if (command.Contains(normalizedCommandLine)) score += 2;
+            if (command.Contains('.') && normalizedCommandLine.Contains(command)) score += 3;
+            else if (normalizedCommandLine.Length >= MinimumCommand && command.Contains(normalizedCommandLine)) score += 2;
         }
 
         return score;
