@@ -1,12 +1,11 @@
-using System.Windows;
 using Wymcmd.Core.Store;
 using Wymcmd.ViewModels;
 
 namespace Wymcmd.Views;
 
-public partial class StatsWindow : Window
+public partial class StatsPage
 {
-    public StatsWindow(EventStore store)
+    public StatsPage(EventStore store)
     {
         InitializeComponent();
         DataContext = new StatsViewModel(store);

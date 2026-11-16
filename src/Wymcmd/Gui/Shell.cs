@@ -12,6 +12,10 @@ public static class Shell
 {
     public static int Run()
     {
+        // A list and a few cards do not need the GPU, and asking for it loads every display
+        // driver into the process: 150 MB on a laptop with two adapters, for nothing drawn faster.
+        System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+
         var application = new Application
         {
             ShutdownMode = ShutdownMode.OnMainWindowClose

@@ -74,7 +74,15 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SelectedLanguage));
         OnPropertyChanged(nameof(EnglishActive));
         OnPropertyChanged(nameof(TurkishActive));
-        RefreshTexts();
+        OnPropertyChanged(nameof(Watching));
+
+        // The watch button above, and the verdict, the dates and the fact cards are built by converters from the launch
+        // itself, so nothing tells them the language changed. Reload and pick the same launch.
+        var keep = Selected;
+        Selected = null;
+        LoadHistory();
+        if (keep is not null)
+            Selected = Events.FirstOrDefault(e => e.Pid == keep.Pid && e.StartTime == keep.StartTime) ?? Selected;
     }
 
     public Loc.LanguageOption SelectedLanguage
@@ -185,7 +193,18 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             var existing = Events.FirstOrDefault(e => e.Pid == evt.Pid && e.StartTime == evt.StartTime);
             if (existing is not null)
             {
-                Events[Events.IndexOf(existing)] = evt;
+                // The engine reports the same object again once the window state is known.
+                // Assigning an item over itself changes nothing the list can see, so the row and
+                // the card above it kept saying "unknown": take it out and put it back.
+                var index = Events.IndexOf(existing);
+                var wasSelected = ReferenceEquals(Selected, existing);
+                Events.RemoveAt(index);
+                Events.Insert(index, evt);
+                if (wasSelected)
+                {
+                    Selected = null;
+                    Selected = evt;
+                }
                 continue;
             }
 

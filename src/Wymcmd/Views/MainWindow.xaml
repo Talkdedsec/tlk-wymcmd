@@ -3,226 +3,350 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:Wymcmd.Converters"
         xmlns:loc="clr-namespace:Wymcmd.Core.Localization"
-        xmlns:vm="clr-namespace:Wymcmd.ViewModels"
         Title="Why My CMD Opened"
-        Width="1280" Height="800" MinWidth="900" MinHeight="560"
-        Background="{StaticResource Background}"
+        Width="1280" Height="800" MinWidth="960" MinHeight="600"
+        Background="{StaticResource Background}" Foreground="{StaticResource Text}"
+        FontFamily="{StaticResource UiFont}" FontSize="13"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
-        <conv:VerdictConverter x:Key="Verdict" />
+        <conv:SentenceConverter x:Key="Sentence" />
+        <conv:WhenLineConverter x:Key="WhenLine" />
+        <conv:ChainStepsConverter x:Key="ChainSteps" />
+        <conv:ConfidenceTextConverter x:Key="ConfidenceText" />
         <conv:RiskBrushConverter x:Key="RiskBrush" />
         <conv:WindowStateTextConverter x:Key="WindowText" />
         <conv:SignatureTextConverter x:Key="SignatureText" />
         <conv:SourceTextConverter x:Key="SourceText" />
-        <conv:TimeAgoConverter x:Key="TimeAgo" />
         <conv:NullToCollapsedConverter x:Key="HideEmpty" />
         <conv:BoolToWatchTextConverter x:Key="WatchText" />
         <conv:EmptyToVisibleConverter x:Key="WhenEmpty" />
         <conv:RiskFactorTextConverter x:Key="RiskFactorText" />
-        <conv:AncestorNameConverter x:Key="AncestorName" />
     </Window.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="60" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <!-- header -->
-        <Border Grid.Row="0" Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
-            <Grid Margin="18,12">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="/Assets/brand/logo.png" Height="34" Width="34" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="{loc:T app.long_name}" FontSize="17" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource Label}">
-                            <Run Text="wymcmd" Foreground="{StaticResource Mint}" />
-                            <Run Text="  ·  " />
-                            <Run Text="{loc:T app.subtitle}" />
-                        </TextBlock>
+        <!-- rail: one window, five pages -->
+        <Border Grid.Column="0" Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="0,14,0,12">
+                <!-- Decoded at the size it is drawn: the source is 1254 px square for a 30 px mark. -->
+                <Image DockPanel.Dock="Top" Height="30" Width="30" Margin="0,0,0,18"
+                       RenderOptions.BitmapScalingMode="HighQuality">
+                    <Image.Source>
+                        <BitmapImage UriSource="/Assets/brand/logo.png" DecodePixelWidth="90" />
+                    </Image.Source>
+                </Image>
+
+                <Border DockPanel.Dock="Bottom" Width="40" CornerRadius="8" BorderThickness="1"
+                        BorderBrush="{StaticResource Border}" ToolTip="{loc:T gui.language}">
+                    <StackPanel>
+                        <Button Content="EN" Command="{Binding SetLanguageCommand}" CommandParameter="en"
+                                Style="{StaticResource LanguageButton}" Tag="{Binding EnglishActive}" />
+                        <Button Content="TR" Command="{Binding SetLanguageCommand}" CommandParameter="tr"
+                                Style="{StaticResource LanguageButton}" Tag="{Binding TurkishActive}" />
                     </StackPanel>
+                </Border>
+
+                <StackPanel HorizontalAlignment="Center">
+                    <RadioButton Style="{StaticResource RailButton}" GroupName="nav" Content="&#xE756;" Tag="launches"
+                                 IsChecked="True" Checked="OnNav" ToolTip="{loc:T gui.launches}" />
+                    <RadioButton Style="{StaticResource RailButton}" GroupName="nav" Content="&#xE81C;" Tag="timeline"
+                                 Checked="OnNav" ToolTip="{loc:T gui.timeline_button}" />
+                    <RadioButton Style="{StaticResource RailButton}" GroupName="nav" Content="&#xEA18;" Tag="rules"
+                                 Checked="OnNav" ToolTip="{loc:T gui.rules_button}" />
+                    <RadioButton Style="{StaticResource RailButton}" GroupName="nav" Content="&#xE9D2;" Tag="stats"
+                                 Checked="OnNav" ToolTip="{loc:T gui.stats_button}" />
+                    <RadioButton Style="{StaticResource RailButton}" GroupName="nav" Content="&#xE8F1;" Tag="sources"
+                                 Checked="OnNav" ToolTip="{loc:T gui.sources_button}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="22,16,22,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- header: where you are, whether anything is watching, and the two global actions -->
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock x:Name="PageTitle" Text="{loc:T gui.launches}" FontSize="20" FontWeight="SemiBold"
+                               FontFamily="{StaticResource DisplayFont}" />
+                    <TextBlock Style="{StaticResource Label}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding CaptureText, Mode=OneWay}" />
+                        <Run Text="  ·  " />
+                        <Run Text="{Binding StatusText, Mode=OneWay}" />
+                    </TextBlock>
                 </StackPanel>
 
-                <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Center" ItemHeight="32">
-                    <Border BorderBrush="{StaticResource Border}" BorderThickness="1" CornerRadius="6"
-                            Background="{StaticResource SurfaceRaised}" Padding="2" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="EN" Command="{Binding SetLanguageCommand}" CommandParameter="en"
-                                    Padding="10,3" BorderThickness="0"
-                                    Style="{StaticResource LanguageButton}" Tag="{Binding EnglishActive}" />
-                            <Button Content="TR" Command="{Binding SetLanguageCommand}" CommandParameter="tr"
-                                    Padding="10,3" BorderThickness="0"
-                                    Style="{StaticResource LanguageButton}" Tag="{Binding TurkishActive}" />
-                        </StackPanel>
-                    </Border>
-                    <Button Content="{loc:T gui.timeline_button}" Click="OnTimelineClick" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.rules_button}" Click="OnRulesClick" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.stats_button}" Click="OnStatsClick" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.sources_button}" Click="OnSourcesClick" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.refresh}" Command="{Binding RefreshCommand}" Margin="8,0,0,0" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Content="{Binding Watching, Converter={StaticResource WatchText}}"
-                            Command="{Binding ToggleWatchCommand}" Style="{StaticResource AccentButton}" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.panic}" Command="{Binding PanicCommand}" Margin="8,0,0,0"
-                            Foreground="{StaticResource Danger}" />
-                </WrapPanel>
+                            Command="{Binding ToggleWatchCommand}" Style="{StaticResource AccentButton}" />
+                    <Button Content="{loc:T gui.panic}" Command="{Binding PanicCommand}"
+                            Style="{StaticResource DangerButton}" Margin="8,0,0,0" />
+                </StackPanel>
             </Grid>
-        </Border>
 
-        <!-- filters -->
-        <Border Grid.Row="1" Background="{StaticResource Background}" Padding="18,10">
-            <StackPanel Orientation="Horizontal">
-                <TextBox Width="280" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
-                <CheckBox Content="{loc:T gui.filter_console}" IsChecked="{Binding ConsoleOnly}" Margin="14,0,0,0" />
-                <CheckBox Content="{loc:T gui.filter_hidden}" IsChecked="{Binding HiddenOnly}" Margin="14,0,0,0" />
-                <CheckBox Content="{loc:T gui.filter_unsigned}" IsChecked="{Binding UnsignedOnly}" Margin="14,0,0,0" />
-                <TextBlock Text="{loc:T gui.filter_risk}" Style="{StaticResource Label}" Margin="18,0,6,0" VerticalAlignment="Center" />
-                <Slider Width="120" Minimum="0" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True"
-                        Value="{Binding MinRisk}" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding MinRisk}" Style="{StaticResource Label}" Margin="6,0,0,0" VerticalAlignment="Center" />
-            </StackPanel>
-        </Border>
+            <ContentControl x:Name="PageHost" Grid.Row="1" Focusable="False" />
 
-        <!-- events + detail -->
-        <Grid Grid.Row="2" Margin="12,0,12,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="420" />
-                <ColumnDefinition Width="4" />
-                <ColumnDefinition Width="440" MinWidth="320" />
-            </Grid.ColumnDefinitions>
+            <Grid x:Name="LaunchesPage" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-            <TextBlock Grid.Column="0" Text="{loc:T gui.empty_list}" Style="{StaticResource Label}"
-                       TextWrapping="Wrap" MaxWidth="360" TextAlignment="Center"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Visibility="{Binding Events.Count, Converter={StaticResource WhenEmpty}}" />
+                <!-- the answer, before anything else -->
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="20,16,20,18" Margin="0,0,0,14"
+                        Visibility="{Binding Selected, Converter={StaticResource HideEmpty}}">
+                    <Grid DataContext="{Binding Selected}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-            <ListView Grid.Column="0" ItemsSource="{Binding Events}" SelectedItem="{Binding Selected}">
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="4" />
-                                <ColumnDefinition Width="70" />
-                                <ColumnDefinition Width="160" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{Binding Converter={StaticResource WhenLine}}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding Converter={StaticResource Sentence}}" FontSize="21" FontWeight="SemiBold"
+                                       FontFamily="{StaticResource DisplayFont}" TextWrapping="Wrap" Margin="0,5,0,12" />
 
-                            <Rectangle Grid.Column="0" Width="3" RadiusX="2" RadiusY="2"
-                                       Fill="{Binding Risk, Converter={StaticResource RiskBrush}}" Margin="0,1,8,1" />
-
-                            <TextBlock Grid.Column="1" Text="{Binding StartTime, StringFormat=HH:mm:ss}"
-                                       Style="{StaticResource Mono}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
-
-                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding ImageName}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding Window, Converter={StaticResource WindowText}}"
-                                           Style="{StaticResource Label}" />
-                            </StackPanel>
-
-                            <TextBlock Grid.Column="3" Text="{Binding Converter={StaticResource Verdict}}"
-                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="8,0" />
-
-                            <Border Grid.Column="4" Background="{Binding Risk, Converter={StaticResource RiskBrush}}"
-                                    CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Risk}" Foreground="#FF05070A" FontWeight="SemiBold" FontSize="11" />
-                            </Border>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
-
-            <GridSplitter Grid.Column="1" Width="4" Background="Transparent" HorizontalAlignment="Stretch" />
-
-            <Border Grid.Column="2" Background="{StaticResource Surface}" CornerRadius="8" Padding="16"
-                    BorderBrush="{StaticResource Border}" BorderThickness="1" Margin="0,0,0,12">
-                <Grid>
-                    <TextBlock Text="{loc:T gui.empty_detail}" Style="{StaticResource Label}"
-                               TextWrapping="Wrap" TextAlignment="Center"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Visibility="{Binding Selected, Converter={StaticResource WhenEmpty}}" />
-
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              Visibility="{Binding Selected, Converter={StaticResource HideEmpty}}">
-                    <StackPanel DataContext="{Binding Selected}">
-                        <TextBlock Text="{Binding ImageName}" FontSize="16" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Converter={StaticResource Verdict}}" TextWrapping="Wrap"
-                                   Foreground="{StaticResource Mint}" Margin="0,4,0,14" />
-
-                        <TextBlock Text="{loc:T why.when}" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding StartTime, StringFormat=F}" Margin="0,0,0,2" />
-                        <TextBlock Text="{Binding StartTime, Converter={StaticResource TimeAgo}}"
-                                   Style="{StaticResource Label}" Margin="0,0,0,12" />
-
-                        <TextBlock Text="{loc:T why.command}" Style="{StaticResource Label}" />
-                        <TextBox Text="{Binding CommandLine, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
-                                 FontFamily="{StaticResource MonoFont}" Margin="0,0,0,12" />
-
-                        <StackPanel Visibility="{Binding DecodedCommand, Converter={StaticResource HideEmpty}}">
-                            <TextBlock Text="{loc:T why.decoded}" Style="{StaticResource Label}" />
-                            <TextBox Text="{Binding DecodedCommand, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
-                                     FontFamily="{StaticResource MonoFont}" Margin="0,0,0,12" />
+                            <ItemsControl ItemsSource="{Binding Converter={StaticResource ChainSteps}}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock x:Name="Arrow" Text="&#xE76C;" Style="{StaticResource Icon}"
+                                                       FontSize="9" Margin="7,0" />
+                                            <Border x:Name="Chip" Background="{StaticResource SurfaceRaised}" CornerRadius="6"
+                                                    Padding="9,4" BorderThickness="1" BorderBrush="Transparent">
+                                                <TextBlock x:Name="StepName" Text="{Binding Name}" Style="{StaticResource Mono}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding First}" Value="True">
+                                                <Setter TargetName="Arrow" Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Last}" Value="True">
+                                                <Setter TargetName="Chip" Property="Background" Value="{StaticResource MintWash}" />
+                                                <Setter TargetName="Chip" Property="BorderBrush" Value="{StaticResource Mint}" />
+                                                <Setter TargetName="StepName" Property="Foreground" Value="{StaticResource Mint}" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
-                        <TextBlock Text="{loc:T why.image}" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding ImagePath}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Border Grid.Column="1" Background="{Binding Risk, Converter={StaticResource RiskBrush}}"
+                                CornerRadius="9" Padding="14,7" VerticalAlignment="Top" Margin="16,0,0,0" MinWidth="64">
+                            <StackPanel>
+                                <TextBlock Text="{loc:T why.risk}" Foreground="#FF05070A" FontSize="11" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding Risk}" Foreground="#FF05070A" FontSize="22" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
 
-                        <TextBlock Text="{loc:T why.source}" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding Source, Converter={StaticResource SourceText}}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <UniformGrid Grid.Row="1" Grid.ColumnSpan="2" Rows="1" Margin="-4,8,-4,0">
+                            <Border Style="{StaticResource Fact}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T why.window}" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding Window, Converter={StaticResource WindowText}}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Fact}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T why.signature}" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding Signature, Converter={StaticResource SignatureText}}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Fact}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T why.user}" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding UserName, TargetNullValue=-}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Fact}" Margin="4,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T why.confidence}" Style="{StaticResource Label}" />
+                                    <TextBlock Text="{Binding Source, Converter={StaticResource ConfidenceText}}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </Grid>
+                </Border>
 
-                        <TextBlock Text="{loc:T why.signature}" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding Signature, Converter={StaticResource SignatureText}}" Margin="0,0,0,12" />
-
-                        <TextBlock Text="{loc:T why.user}" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding UserName}" Margin="0,0,0,12" />
-
-                        <TextBlock Text="{loc:T why.chain}" Style="{StaticResource Label}" />
-                        <ItemsControl ItemsSource="{Binding Chain}" Margin="0,0,0,12">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Style="{StaticResource Mono}">
-                                        <Run Text="{Binding ImageName, Mode=OneWay, Converter={StaticResource AncestorName}}" />
-                                        <Run Text="{Binding Pid, Mode=OneWay, StringFormat=({0})}" Foreground="{StaticResource Muted}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <TextBlock Text="{loc:T why.risk}" Style="{StaticResource Label}" />
-                        <ItemsControl ItemsSource="{Binding RiskFactors}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Margin="0,1">
-                                        <Run Text="{Binding Weight, Mode=OneWay, StringFormat=+{0}}" Foreground="{StaticResource Warn}" />
-                                        <Run Text=" " />
-                                        <Run Text="{Binding Key, Mode=OneWay, Converter={StaticResource RiskFactorText}}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                <!-- filters -->
+                <!-- The buttons keep the right edge; the filters wrap under each other when the window is narrow. -->
+                <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,4">
+                        <Button Content="{loc:T gui.refresh}" Command="{Binding RefreshCommand}" />
+                        <Button Content="{loc:T gui.export}" Click="OnExportClick" Margin="8,0,0,0" />
                     </StackPanel>
-                </ScrollViewer>
-                </Grid>
-            </Border>
-        </Grid>
 
-        <!-- status -->
-        <Border Grid.Row="3" Background="{StaticResource Surface}" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="18,8">
-            <Grid>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding CaptureText}" Style="{StaticResource Label}" />
-                    <TextBlock Text="  ·  " Style="{StaticResource Label}" />
-                    <TextBlock Text="{Binding StatusText}" Style="{StaticResource Label}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="{loc:T gui.export}" Click="OnExportClick" />
-                    <Button Content="{loc:T gui.open_location}" Command="{Binding OpenLocationCommand}" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.kill}" Command="{Binding KillSelectedCommand}" Margin="8,0,0,0" />
-                    <Button Content="{loc:T gui.kill_tree}" Command="{Binding KillTreeSelectedCommand}" Margin="8,0,0,0" />
-                </StackPanel>
+                    <WrapPanel>
+                        <Grid Width="290" Margin="0,0,12,4">
+                            <TextBox x:Name="Search" Padding="30,6,9,6"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=250}" />
+                            <TextBlock Text="&#xE721;" Style="{StaticResource Icon}" Margin="10,0,0,0"
+                                       HorizontalAlignment="Left" IsHitTestVisible="False" />
+                            <TextBlock Text="{loc:T gui.search_hint}" Margin="32,0,0,0" VerticalAlignment="Center"
+                                       IsHitTestVisible="False" FontSize="12.5">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Label}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=Search}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,12,4" Height="32">
+                            <ToggleButton Style="{StaticResource Chip}" VerticalAlignment="Center" Content="{loc:T gui.filter_console}"
+                                          IsChecked="{Binding ConsoleOnly}" />
+                            <ToggleButton Style="{StaticResource Chip}" VerticalAlignment="Center" Content="{loc:T gui.filter_hidden}"
+                                          IsChecked="{Binding HiddenOnly}" Margin="6,0,0,0" />
+                            <ToggleButton Style="{StaticResource Chip}" VerticalAlignment="Center" Content="{loc:T gui.filter_unsigned}"
+                                          IsChecked="{Binding UnsignedOnly}" Margin="6,0,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4" Height="32">
+                            <TextBlock Text="{loc:T gui.filter_risk}" Style="{StaticResource Label}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <Slider Width="110" Minimum="0" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True"
+                                    Value="{Binding MinRisk}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding MinRisk}" Style="{StaticResource Mono}" Width="26" Margin="8,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </WrapPanel>
+                </DockPanel>
+
+                <!-- launches + the rest of the evidence -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="420" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="380" MinWidth="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Padding="6">
+                        <Grid>
+                            <TextBlock Text="{loc:T gui.empty_list}" Style="{StaticResource Label}" FontSize="13"
+                                       TextWrapping="Wrap" MaxWidth="360" TextAlignment="Center"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding Events.Count, Converter={StaticResource WhenEmpty}}" />
+
+                            <ListView ItemsSource="{Binding Events}" SelectedItem="{Binding Selected}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="72" />
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0" Text="{Binding StartTime, StringFormat=HH:mm:ss}"
+                                                       Style="{StaticResource Mono}" Foreground="{StaticResource Muted}" VerticalAlignment="Center" />
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ImageName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Window, Converter={StaticResource WindowText}}"
+                                                           Style="{StaticResource Label}" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="8,0">
+                                                <TextBlock Text="{Binding Converter={StaticResource Sentence}}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding CommandLine}" Style="{StaticResource Label}"
+                                                           FontFamily="{StaticResource MonoFont}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <Border Grid.Column="3" Background="{Binding Risk, Converter={StaticResource RiskBrush}}"
+                                                    CornerRadius="5" Padding="7,2" MinWidth="30" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Risk}" Foreground="#FF05070A" FontWeight="SemiBold"
+                                                           FontSize="11.5" HorizontalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" Width="14" Background="Transparent" HorizontalAlignment="Stretch" />
+
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16">
+                        <Grid>
+                            <TextBlock Text="{loc:T gui.empty_detail}" Style="{StaticResource Label}" FontSize="13"
+                                       TextWrapping="Wrap" TextAlignment="Center"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding Selected, Converter={StaticResource WhenEmpty}}" />
+
+                            <DockPanel Visibility="{Binding Selected, Converter={StaticResource HideEmpty}}">
+                                <WrapPanel DockPanel.Dock="Bottom" Margin="0,12,0,-8">
+                                    <Button Content="{loc:T gui.open_location}" Command="{Binding OpenLocationCommand}" Margin="0,0,8,8" />
+                                    <Button Content="{loc:T gui.kill}" Command="{Binding KillSelectedCommand}"
+                                            Style="{StaticResource DangerButton}" Margin="0,0,8,8" />
+                                    <Button Content="{loc:T gui.kill_tree}" Command="{Binding KillTreeSelectedCommand}"
+                                            Style="{StaticResource DangerButton}" Margin="0,0,0,8" />
+                                </WrapPanel>
+
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel DataContext="{Binding Selected}">
+                                        <TextBlock Text="{loc:T why.command}" Style="{StaticResource Label}" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding CommandLine, Mode=OneWay}" Style="{StaticResource CodeBlock}" Margin="0,0,0,14" />
+
+                                        <StackPanel Visibility="{Binding DecodedCommand, Converter={StaticResource HideEmpty}}">
+                                            <TextBlock Text="{loc:T why.decoded}" Style="{StaticResource Label}" Margin="0,0,0,4" />
+                                            <TextBox Text="{Binding DecodedCommand, Mode=OneWay}" Style="{StaticResource CodeBlock}" Margin="0,0,0,14" />
+                                        </StackPanel>
+
+                                        <TextBlock Text="{loc:T why.image}" Style="{StaticResource Label}" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding ImagePath, Mode=OneWay}" Style="{StaticResource CodeBlock}" Margin="0,0,0,14" />
+
+                                        <TextBlock Text="{loc:T why.source}" Style="{StaticResource Label}" />
+                                        <TextBlock Text="{Binding Source, Converter={StaticResource SourceText}}" TextWrapping="Wrap" Margin="0,2,0,14" />
+
+                                        <TextBlock Text="{loc:T why.risk}" Style="{StaticResource Label}" />
+                                        <ItemsControl ItemsSource="{Binding RiskFactors}" Focusable="False" Margin="0,2,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="38" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Weight, StringFormat=+{0}}" Style="{StaticResource Mono}"
+                                                                   Foreground="{StaticResource Warn}" />
+                                                        <TextBlock Grid.Column="1" TextWrapping="Wrap"
+                                                                   Text="{Binding Key, Converter={StaticResource RiskFactorText}}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
-        </Border>
+        </Grid>
     </Grid>
 </Window>

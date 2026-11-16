@@ -1,11 +1,10 @@
-using System.Windows;
 using Wymcmd.ViewModels;
 
 namespace Wymcmd.Views;
 
-public partial class SourcesWindow : Window
+public partial class SourcesPage
 {
-    public SourcesWindow()
+    public SourcesPage()
     {
         InitializeComponent();
         DataContext = new SourcesViewModel();

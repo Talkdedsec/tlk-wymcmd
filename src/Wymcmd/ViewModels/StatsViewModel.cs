@@ -15,7 +15,7 @@ public sealed partial class StatsViewModel : ObservableObject
     public StatsViewModel(EventStore store)
     {
         _store = store;
-        Load();
+        _ = Load();
     }
 
     public ObservableCollection<StatBar> Launchers { get; } = [];
@@ -26,20 +26,22 @@ public sealed partial class StatsViewModel : ObservableObject
     [ObservableProperty] private string _summary = "";
     [ObservableProperty] private int _days = 7;
 
+    /// <summary>Eight aggregate queries: a third of a second on a month of history, so not on the UI thread.</summary>
     [RelayCommand]
-    private void Load()
+    private async Task Load()
     {
-        var stats = EventStats.Collect(_store, TimeSpan.FromDays(Days));
+        var days = Days;
+        var stats = await Task.Run(() => EventStats.Collect(_store, TimeSpan.FromDays(days)));
 
         Fill(Launchers, stats.TopLaunchers);
         Fill(Images, stats.TopImages);
         Fill(Commands, stats.TopCommands);
         Fill(Hours, stats.ByHour);
 
-        Summary = Loc.T("stats.summary", stats.Total, stats.Consoles, stats.Hidden, stats.Unsigned, Days);
+        Summary = Loc.T("stats.summary", stats.Total, stats.Consoles, stats.Hidden, stats.Unsigned, days);
     }
 
-    partial void OnDaysChanged(int value) => Load();
+    partial void OnDaysChanged(int value) => _ = Load();
 
     private static void Fill(ObservableCollection<StatBar> target, IReadOnlyList<Tally> tallies)
     {

@@ -17,6 +17,63 @@ public sealed class VerdictConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public sealed class SentenceConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is ProcEvent evt ? AttributionEngine.Sentence(evt) : "";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>"24 August 12:27:59 · 3 minutes ago · lived 42 ms", in the active language.</summary>
+public sealed class WhenLineConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not ProcEvent evt) return "";
+
+        var line = evt.StartTime.ToString("d MMMM HH:mm:ss", Loc.Culture) + "  ·  " + Loc.Ago(evt.StartTime);
+        return evt.Lifetime is { } lifetime
+            ? line + "  ·  " + Loc.T("gui.lived", Loc.Duration(lifetime))
+            : line;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed record ChainStep(string Name, bool First, bool Last);
+
+/// <summary>The ancestry oldest first, ending with the process itself, one chip per step.</summary>
+public sealed class ChainStepsConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not ProcEvent evt) return Array.Empty<ChainStep>();
+
+        var names = evt.Chain
+            .Select(link => link.ImageName.Length > 0 ? link.ImageName : Loc.T("chain.exited"))
+            .Reverse()
+            .Append(evt.ImageName)
+            .ToList();
+
+        return names.Select((name, i) => new ChainStep(name, i == 0, i == names.Count - 1)).ToList();
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class ConfidenceTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => Loc.T("confidence." + ((value as LaunchSource)?.Confidence ?? Confidence.Inferred).ToString().ToLowerInvariant());
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class RiskBrushConverter : IValueConverter
 {
     private static readonly SolidColorBrush Calm = new(Color.FromRgb(0x3D, 0x7F, 0x6B));
