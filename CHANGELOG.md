@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.4.0
+
+- **The window, rebuilt around the answer.** The selected launch now reads as one sentence at the
+  top - what started it - with the ancestry drawn as a chain underneath and the window, signature,
+  user and confidence beside it. Timeline, Rules, Patterns and Sources are pages of the same
+  window, reached from a rail on the left, instead of four dialogs. Filters are chips, the command
+  line and path can be selected and copied, and everything that ends a process is drawn apart from
+  everything that does not.
+- Switching language in the window left the verdicts, dates and the watch button in the old one
+  until the next refresh. A launch whose window state arrived late kept reading "unknown" in the
+  list while watching. Making the window narrower pushed the risk badges out of sight.
+- **Rules that ask for a hidden window never matched while watching.** Whether a console has a
+  window is only known about a third of a second after it starts, and rules were judged before
+  that. `wymcmd trap --hidden-only` and `rules add --hidden` caught nothing. They are asked again
+  once the window state is in.
+- **A launch that exited at once lost its exit.** A stop was handled ahead of its own start, so the
+  lifetime and exit code went missing for exactly the 40 ms launches this tool exists for. Starts
+  and stops now go through one queue, in order.
+- The risk score and its reasons are written together. A late hidden-window answer raised the
+  score to 25 and left a single `+15` beside it.
+- A child of `svchost -k netsvcs` is no longer called a scheduled task on that alone. Windows
+  Update, Group Policy and secondary logon live in the same host; it takes the Schedule service or
+  a registered task that matches.
+- **Turkish Windows.** Rule patterns folded case with the system language, where `I` and `i` are
+  different letters: `*install*.exe` did not match `INSTALLER.EXE`. Matching on names and command
+  lines now ignores the machine's language.
+- `rules add --action kill` with no condition was accepted and would have ended every process that
+  started under `watch --enforce` or the watchdog. A rule that hides, suspends or kills needs at
+  least one condition. A pattern that does not compile and an action that does not exist are
+  refused instead of saved.
+- Values that cannot be read are errors now, not guesses: `--last 7x` used to mean a day,
+  `--risk abc` zero, `export --format xml` wrote CSV into an `.xml` file. Exit code 1 and the name
+  of the value.
+- `--json` means stdout carries JSON and nothing else. "Nothing matched" and the other lines meant
+  for a person go to stderr. `tree` and `prune` print JSON too; they ignored the flag.
+- `--lang tr` after a command was read as the thing to do: `wymcmd service --lang tr` asked for
+  elevation to run a `tr` action, `wymcmd why --lang tr` looked for a process called `tr`.
+- `trap --once --action kill` could exit before it had killed what it caught.
+- `kill --tree` kills the root while it is still suspended, so it cannot start a replacement in
+  the gap; it is let go again only if it could not be killed.
+- The window draws in software. Asking for the GPU loaded every display driver into the process:
+  176 MB private on a laptop with two adapters, 92 MB without, for a list and a few cards.
+- The Patterns page reads its eight aggregates off the UI thread - a third of a second on a month
+  of history.
+
 ## 0.3.1
 
 - **`WYMCMD_HOME`**: point the database, rules, settings, log and traces at a folder of your
