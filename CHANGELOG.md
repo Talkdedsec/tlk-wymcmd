@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1
+
+- **Launches were credited to "Windows Desktop Update".** Windows ships an Active Setup entry
+  whose whole command is the letter `U`. A launch with no better explanation was matched against
+  registered commands by containment, so any command line with a `u` in it "contained" that entry
+  and was reported as started by it. A registered command now has to be long enough to be a
+  command before containment counts. Present since Active Setup was added in 0.3.0.
+- **A child reported before its parent lost its chain.** Without administrator rights starts
+  arrive in batches, in no particular order; a console whose parent came later in the same batch
+  ended in "no launch source could be attributed". The parent is read directly while it is still
+  running.
+- The screenshots in the readme show the 0.4 window.
+
 ## 0.4.0
 
 - **The window, rebuilt around the answer.** The selected launch now reads as one sentence at the
