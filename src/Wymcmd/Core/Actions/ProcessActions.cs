@@ -47,7 +47,8 @@ public static class ProcessActions
     }
 
     /// <summary>
-    /// Suspends the root first so it cannot spawn while we work, then kills leaves upward.
+    /// Suspends the root first so it cannot spawn while we work, then kills leaves upward. The
+    /// root is killed while still suspended; it is only let go again if it could not be killed.
     /// </summary>
     public static ActionResult KillTree(ProcessTree tree, int pid)
     {
@@ -65,8 +66,8 @@ public static class ProcessActions
             if (Kill(record.Pid, record.ImageName).Success) killed++;
         }
 
-        Resume(pid);
         if (Kill(pid).Success) killed++;
+        else Resume(pid);
 
         return new ActionResult(killed > 0 ? ActionOutcome.Done : ActionOutcome.Failed, killed);
     }

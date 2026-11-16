@@ -52,7 +52,7 @@ public sealed class AttributionEngine(AutostartIndex index)
 
     private static readonly HashSet<string> RemoteAccess = new(StringComparer.OrdinalIgnoreCase)
     {
-        "sshd.exe", "winrshost.exe", "wsmprovhost.exe", "psexesvc.exe", "rundll32.exe.tsclient"
+        "sshd.exe", "winrshost.exe", "wsmprovhost.exe", "psexesvc.exe"
     };
 
     public void Attribute(ProcEvent evt)
@@ -92,19 +92,26 @@ public sealed class AttributionEngine(AutostartIndex index)
         if (parentName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
         {
             var host = parent?.CommandLine ?? "";
-            if (host.Contains("Schedule", StringComparison.OrdinalIgnoreCase) || host.Contains("netsvcs", StringComparison.OrdinalIgnoreCase))
+            var scheduler = host.Contains("Schedule", StringComparison.OrdinalIgnoreCase);
+
+            // netsvcs is a shared host: Task Scheduler lives there, and so do Windows Update, Group
+            // Policy and secondary logon. Only a registered task that matches makes it a task.
+            if (scheduler || host.Contains("netsvcs", StringComparison.OrdinalIgnoreCase))
             {
                 var task = index.Match(evt.ImagePath, evt.CommandLine);
                 if (task is { Kind: LaunchSourceKind.ScheduledTask })
                     return Source(task, Confidence.Certain);
 
-                return new LaunchSource
+                if (scheduler)
                 {
-                    Kind = LaunchSourceKind.ScheduledTask,
-                    Location = "Task Scheduler",
-                    Confidence = Confidence.High,
-                    FoundVia = evt.Sources
-                };
+                    return new LaunchSource
+                    {
+                        Kind = LaunchSourceKind.ScheduledTask,
+                        Location = "Task Scheduler",
+                        Confidence = Confidence.High,
+                        FoundVia = evt.Sources
+                    };
+                }
             }
         }
 
@@ -190,10 +197,18 @@ public sealed class AttributionEngine(AutostartIndex index)
     /// <summary>One sentence a human can act on, in the active language.</summary>
     public static string Verdict(ProcEvent evt)
     {
+        var sentence = Sentence(evt);
+        var chain = ChainText(evt);
+        return chain.Length == 0 ? sentence : Loc.T("verdict.line", sentence, chain);
+    }
+
+    /// <summary>The verdict without the chain, for places that draw the chain themselves.</summary>
+    public static string Sentence(ProcEvent evt)
+    {
         var source = evt.Source;
         var parentName = evt.Chain.FirstOrDefault()?.ImageName ?? evt.ParentImageName;
 
-        var sentence = source?.Kind switch
+        return source?.Kind switch
         {
             LaunchSourceKind.ScheduledTask => Loc.T("verdict.started_by_task", source.Name ?? Loc.T("source.scheduledtask")),
             LaunchSourceKind.RunKey => Loc.T("verdict.started_by_runkey", source.Name ?? ""),
@@ -207,9 +222,6 @@ public sealed class AttributionEngine(AutostartIndex index)
                 : Loc.T("verdict.started_by_parent", parentName),
             _ => Loc.T("verdict.started_by_parent", source.Name ?? parentName)
         };
-
-        var chain = ChainText(evt);
-        return chain.Length == 0 ? sentence : Loc.T("verdict.line", sentence, chain);
     }
 
     public static string ChainText(ProcEvent evt, int maxLinks = 4)

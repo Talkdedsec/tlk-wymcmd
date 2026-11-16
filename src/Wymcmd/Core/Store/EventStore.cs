@@ -248,9 +248,7 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
             parameters["$sources"].Value = (int)evt.Sources;
             parameters["$confidence"].Value = (int)evt.Confidence;
             parameters["$risk"].Value = evt.Risk;
-            parameters["$risk_factors"].Value = evt.RiskFactors.Count == 0
-                ? DBNull.Value
-                : JsonSerializer.Serialize(evt.RiskFactors.Select(f => new { f.Key, f.Weight, f.Detail }));
+            parameters["$risk_factors"].Value = FactorsJson(evt);
             parameters["$chain"].Value = evt.Chain.Count == 0
                 ? DBNull.Value
                 : JsonSerializer.Serialize(evt.Chain.Select(link => new AncestorLink
@@ -267,6 +265,10 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
 
         transaction.Commit();
     }
+
+    private static object FactorsJson(ProcEvent evt) => evt.RiskFactors.Count == 0
+        ? DBNull.Value
+        : JsonSerializer.Serialize(evt.RiskFactors.Select(f => new { f.Key, f.Weight, f.Detail }));
 
     public IReadOnlyList<ProcEvent> Query(EventFilter filter)
     {
@@ -358,20 +360,23 @@ public sealed class EventStore : IAsyncDisposable, IDisposable
     /// A console window shows up after the process does; this writes the late answer. The row
     /// may still be sitting in the write queue, so give it a few tries before giving up.
     /// </summary>
-    public async Task UpdateWindowAsync(int pid, DateTime startTime, WindowVisibility window, int risk)
+    public async Task UpdateWindowAsync(ProcEvent evt)
     {
         for (var attempt = 0; attempt < 5; attempt++)
         {
             using var connection = Open();
             using var command = connection.CreateCommand();
+
+            // The reasons go with the number: a score of 25 next to a single +15 reads as a bug.
             command.CommandText = """
-                UPDATE events SET window = $window, risk = $risk
+                UPDATE events SET window = $window, risk = $risk, risk_factors = $factors
                 WHERE pid = $pid AND start_time = $start
                 """;
-            command.Parameters.AddWithValue("$window", (int)window);
-            command.Parameters.AddWithValue("$risk", risk);
-            command.Parameters.AddWithValue("$pid", pid);
-            command.Parameters.AddWithValue("$start", Stamp(startTime));
+            command.Parameters.AddWithValue("$window", (int)evt.Window);
+            command.Parameters.AddWithValue("$risk", evt.Risk);
+            command.Parameters.AddWithValue("$factors", FactorsJson(evt));
+            command.Parameters.AddWithValue("$pid", evt.Pid);
+            command.Parameters.AddWithValue("$start", Stamp(evt.StartTime));
 
             if (command.ExecuteNonQuery() > 0) return;
             await Task.Delay(250).ConfigureAwait(false);

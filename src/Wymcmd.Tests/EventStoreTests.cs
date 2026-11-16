@@ -103,9 +103,15 @@ public sealed class EventStoreTests : IDisposable
         var evt = store.Query(new EventFilter { Limit = 1 }).Single();
 
         store.UpdateExit(evt.Pid, evt.StartTime, evt.StartTime.AddMilliseconds(120), 0);
-        await store.UpdateWindowAsync(evt.Pid, evt.StartTime, WindowVisibility.Hidden, 55);
+        evt.Window = WindowVisibility.Hidden;
+        evt.Risk = 55;
+        evt.RiskFactors.Add(new RiskFactor("unsigned", 30));
+        await store.UpdateWindowAsync(evt);
 
         var updated = store.Query(new EventFilter { Limit = 1 }).Single();
+
+        // The score and the reasons behind it are written together.
+        Assert.Equal(2, updated.RiskFactors.Count);
 
         Assert.NotNull(updated.ExitTime);
         Assert.Equal(0, updated.ExitCode);

@@ -23,8 +23,14 @@ public sealed class CaptureEngine : IAsyncDisposable
     private readonly AttributionEngine _attribution;
     private readonly RuleSet _rules;
 
-    private readonly Channel<RawStart> _incoming = Channel.CreateUnbounded<RawStart>(
+    // Starts and stops share one queue so a stop is never handled before its own start. A
+    // process that lives 40 ms exits long before its start has been enriched.
+    private readonly Channel<object> _incoming = Channel.CreateUnbounded<object>(
         new UnboundedChannelOptions { SingleReader = true });
+
+    /// <summary>Launches whose exit has not been seen yet, by pid. Only the worker touches it.</summary>
+    private readonly Dictionary<int, ProcEvent> _running = [];
+    private readonly ICollector? _injected;
     private readonly CancellationTokenSource _shutdown = new();
     private Task? _worker;
     private ICollector? _collector;
@@ -34,8 +40,11 @@ public sealed class CaptureEngine : IAsyncDisposable
     private System.Threading.Timer? _beat;
     private long _watchId;
 
-    public CaptureEngine(EventStore store, ProcessTree tree, AttributionEngine attribution, RuleSet? rules = null)
+    /// <param name="collector">A collector to use instead of ETW or WMI - what the tests feed events through.</param>
+    public CaptureEngine(EventStore store, ProcessTree tree, AttributionEngine attribution, RuleSet? rules = null,
+        ICollector? collector = null)
     {
+        _injected = collector;
         _store = store;
         _tree = tree;
         _attribution = attribution;
@@ -113,6 +122,8 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     private ICollector SelectCollector()
     {
+        if (_injected is not null) return _injected;
+
         var etw = new EtwCollector();
         if (etw.Available) return etw;
 
@@ -123,9 +134,20 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     private void OnStarted(RawStart raw) => _incoming.Writer.TryWrite(raw);
 
-    private void OnStopped(RawStop raw)
+    private void OnStopped(RawStop raw) => _incoming.Writer.TryWrite(raw);
+
+    private void Finish(RawStop raw)
     {
         _tree.MarkExit(raw.Pid, raw.TimeStamp, raw.ExitCode);
+
+        // The row may still be waiting in the store's write queue, where an UPDATE finds nothing.
+        // Setting the exit on the event itself covers that case: the insert carries it.
+        if (_running.Remove(raw.Pid, out var evt))
+        {
+            evt.ExitTime = raw.TimeStamp;
+            evt.ExitCode = raw.ExitCode;
+        }
+
         var record = _tree.Resolve(raw.Pid, raw.TimeStamp);
         if (record is not null)
             _store.UpdateExit(raw.Pid, record.StartTime, raw.TimeStamp, raw.ExitCode);
@@ -140,16 +162,23 @@ public sealed class CaptureEngine : IAsyncDisposable
         {
             try
             {
-                var raw = await reader.ReadAsync(token).ConfigureAwait(false);
-                var evt = Enrich(raw);
+                var item = await reader.ReadAsync(token).ConfigureAwait(false);
+                if (item is RawStop stop)
+                {
+                    Finish(stop);
+                    continue;
+                }
 
-                Apply(evt);
+                var evt = Enrich((RawStart)item);
+                _running[evt.Pid] = evt;
+
+                var fired = Apply(evt);
 
                 _store.Enqueue(evt);
                 if (++_enriched % 250 == 0) Log.Info($"events enriched and queued: {_enriched}");
                 Observed?.Invoke(evt);
 
-                if (evt.IsConsoleHost) _ = ResolveWindowLaterAsync(evt);
+                if (evt.IsConsoleHost) _ = ResolveWindowLaterAsync(evt, fired);
             }
             catch (OperationCanceledException)
             {
@@ -223,7 +252,7 @@ public sealed class CaptureEngine : IAsyncDisposable
     /// A console window appears a beat after the process does, so the first read would always
     /// say "hidden". Give it a moment, then correct the record.
     /// </summary>
-    private async Task ResolveWindowLaterAsync(ProcEvent evt)
+    private async Task ResolveWindowLaterAsync(ProcEvent evt, Rule? fired)
     {
         try
         {
@@ -238,8 +267,13 @@ public sealed class CaptureEngine : IAsyncDisposable
                 RiskScorer.Score(evt, decoded.Traits);
             }
 
+            // The first pass judged this launch before its window state was known, so a rule that
+            // asks for a hidden window, or for the risk a hidden window adds, could not match yet.
+            if (_rules.Ordered.FirstOrDefault(rule => rule.Matches(evt)) is { } now && now != fired)
+                Apply(evt);
+
             Observed?.Invoke(evt);
-            await _store.UpdateWindowAsync(evt.Pid, evt.StartTime, evt.Window, evt.Risk).ConfigureAwait(false);
+            await _store.UpdateWindowAsync(evt).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -251,14 +285,23 @@ public sealed class CaptureEngine : IAsyncDisposable
     /// Rules are always matched so the caller can report what would happen; only the actions
     /// that change something wait for EnforceRules.
     /// </summary>
-    private void Apply(ProcEvent evt)
+    private Rule? Apply(ProcEvent evt)
     {
-        var rule = _rules.FirstMatch(evt);
-        if (rule is null) return;
+        // Called from the worker and again from the window check, which runs on a pool thread.
+        lock (_rules)
+        {
+            var rule = _rules.FirstMatch(evt);
+            if (rule is null) return null;
 
-        RuleFired?.Invoke(evt, rule);
+            RuleFired?.Invoke(evt, rule);
 
-        if (!EnforceRules) return;
+            if (EnforceRules) Enforce(evt, rule);
+            return rule;
+        }
+    }
+
+    private void Enforce(ProcEvent evt, Rule rule)
+    {
         if (rule.Action is RuleAction.Allow or RuleAction.Log or RuleAction.Notify) return;
 
         var result = rule.Action switch

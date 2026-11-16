@@ -57,7 +57,7 @@ public sealed class Rule
         {
             try
             {
-                if (!Regex.IsMatch(evt.CommandLine, CommandLine, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(50)))
+                if (!Regex.IsMatch(evt.CommandLine, CommandLine, Insensitive, TimeSpan.FromMilliseconds(50)))
                     return false;
             }
             catch (RegexMatchTimeoutException)
@@ -89,6 +89,10 @@ public sealed class Rule
         return true;
     }
 
+    // Names and command lines are not prose: on a Turkish system culture-aware folding would
+    // stop "INSTALL" from matching "install".
+    private const RegexOptions Insensitive = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+
     private static bool Glob(string pattern, string value)
     {
         if (string.IsNullOrEmpty(value)) return false;
@@ -96,7 +100,7 @@ public sealed class Rule
             return string.Equals(pattern, value, StringComparison.OrdinalIgnoreCase);
 
         var regex = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
-        return Regex.IsMatch(value, regex, RegexOptions.IgnoreCase);
+        return Regex.IsMatch(value, regex, Insensitive);
     }
 }
 

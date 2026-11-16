@@ -73,6 +73,29 @@ public class AttributionTests
         Assert.Equal(LaunchSourceKind.Service, evt.Source?.Kind);
     }
 
+    /// <summary>netsvcs hosts Windows Update, Group Policy and more; being its child proves nothing.</summary>
+    [Fact]
+    public void A_shared_service_host_is_not_taken_for_the_task_scheduler()
+    {
+        var evt = Launch("cmd.exe", "cmd.exe /c gpscript", "svchost.exe", "services.exe");
+        evt.Chain[0] = new AncestorLink { Pid = 800, ImageName = "svchost.exe", CommandLine = "svchost.exe -k netsvcs -p -s gpsvc" };
+
+        Engine().Attribute(evt);
+
+        Assert.NotEqual(LaunchSourceKind.ScheduledTask, evt.Source?.Kind);
+    }
+
+    [Fact]
+    public void The_scheduler_host_still_means_a_scheduled_task()
+    {
+        var evt = Launch("cmd.exe", "cmd.exe /c nightly", "svchost.exe", "services.exe");
+        evt.Chain[0] = new AncestorLink { Pid = 800, ImageName = "svchost.exe", CommandLine = "svchost.exe -k netsvcs -p -s Schedule" };
+
+        Engine().Attribute(evt);
+
+        Assert.Equal(LaunchSourceKind.ScheduledTask, evt.Source?.Kind);
+    }
+
     [Fact]
     public void An_office_document_child_is_marked_as_such()
     {
