@@ -14,6 +14,9 @@ public static class Export
         var format = (options.Value("--format") ?? "jsonl").ToLowerInvariant();
         var from = DateTime.Now - since;
 
+        if (format is not ("csv" or "jsonl" or "report" or "md" or "markdown"))
+            throw new ArgumentException(Loc.T("cli.error.bad_argument", "--format", format));
+
         using var store = new EventStore();
 
         var events = options.Has("--forensic")

@@ -13,6 +13,22 @@ public static class Tree
         var positional = options.Positional();
         var live = tree.LiveRecords();
 
+        if (options.Json)
+        {
+            foreach (var record in live.OrderBy(record => record.StartTime))
+            {
+                ConsoleHost.Line(System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    pid = record.Pid,
+                    parentPid = record.ParentPid,
+                    image = record.ImageName,
+                    path = record.ImagePath,
+                    started = record.StartTime
+                }));
+            }
+            return CommandRouter.ExitOk;
+        }
+
         if (positional.Length > 0 && int.TryParse(positional[0], out var pid))
         {
             var root = tree.Resolve(pid);
@@ -23,7 +39,7 @@ public static class Tree
             }
 
             foreach (var link in tree.BuildChain(root).Reverse())
-                ConsoleHost.Line(ConsoleHost.Color($"{link.ImageName} ({link.Pid})", 90));
+                ConsoleHost.Line(ConsoleHost.Color($"{(link.ImageName.Length > 0 ? link.ImageName : Loc.T("chain.exited"))} ({link.Pid})", 90));
 
             Print(root, live, 0);
             return CommandRouter.ExitOk;

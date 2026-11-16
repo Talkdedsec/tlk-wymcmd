@@ -41,20 +41,26 @@ public static class List
         return CommandRouter.ExitOk;
     }
 
-    /// <summary>Accepts 30m, 6h, 3d, 90s - the shapes people actually type.</summary>
+    /// <summary>
+    /// Accepts 30m, 6h, 3d, 90s - the shapes people actually type - and a bare number as hours.
+    /// Anything else is refused: "--last 7x" quietly meaning a day hides the mistake.
+    /// </summary>
     public static TimeSpan ParseSpan(string value)
     {
-        value = value.Trim().ToLowerInvariant();
-        var digits = new string(value.TakeWhile(char.IsDigit).ToArray());
-        if (!double.TryParse(digits, out var amount)) return TimeSpan.FromHours(24);
+        var text = value.Trim().ToLowerInvariant();
+        var digits = new string(text.TakeWhile(char.IsDigit).ToArray());
 
-        return value[^1] switch
+        if (digits.Length > 0 && double.TryParse(digits, out var amount))
         {
-            's' => TimeSpan.FromSeconds(amount),
-            'm' => TimeSpan.FromMinutes(amount),
-            'h' => TimeSpan.FromHours(amount),
-            'd' => TimeSpan.FromDays(amount),
-            _ => TimeSpan.FromHours(amount)
-        };
+            switch (text[digits.Length..])
+            {
+                case "s": return TimeSpan.FromSeconds(amount);
+                case "m": return TimeSpan.FromMinutes(amount);
+                case "h" or "": return TimeSpan.FromHours(amount);
+                case "d": return TimeSpan.FromDays(amount);
+            }
+        }
+
+        throw new ArgumentException(Loc.T("cli.error.bad_argument", "duration", value));
     }
 }

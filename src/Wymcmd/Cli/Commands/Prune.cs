@@ -10,13 +10,13 @@ public static class Prune
         var settings = Settings.Load();
         var changed = false;
 
-        if (options.Value("--days") is { } days && int.TryParse(days, out var parsedDays))
+        if (options.Value("--days") is not null && options.Number("--days", 0) is var parsedDays)
         {
             settings.RetentionDays = Math.Max(0, parsedDays);
             changed = true;
         }
 
-        if (options.Value("--max-mb") is { } size && int.TryParse(size, out var parsedSize))
+        if (options.Value("--max-mb") is not null && options.Number("--max-mb", 0) is var parsedSize)
         {
             settings.MaxDatabaseMb = Math.Max(0, parsedSize);
             changed = true;
@@ -28,6 +28,19 @@ public static class Prune
         var before = store.Bounds();
         var result = Maintenance.Run(store, settings);
         var after = store.Bounds();
+
+        if (options.Json)
+        {
+            ConsoleHost.Line(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                retentionDays = settings.RetentionDays,
+                maxDatabaseMb = settings.MaxDatabaseMb,
+                removed = result.Removed,
+                remaining = after.Count,
+                reclaimedKb = result.Reclaimed / 1024
+            }));
+            return CommandRouter.ExitOk;
+        }
 
         ConsoleHost.Line(Loc.T("prune.policy",
             settings.RetentionDays == 0 ? Loc.T("prune.forever") : settings.RetentionDays.ToString(),

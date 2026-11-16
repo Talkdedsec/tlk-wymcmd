@@ -56,6 +56,17 @@ public static class Rules
     {
         var set = RuleSet.Load(AppPaths.Rules);
 
+        var actionText = options.Value("--action") ?? "log";
+        if (!Enum.TryParse<RuleAction>(actionText, true, out var parsed) || !Enum.IsDefined(parsed) || int.TryParse(actionText, out _))
+            throw new ArgumentException(Loc.T("cli.error.bad_argument", "--action", actionText));
+
+        // A pattern that does not compile would be saved, never match, and warn on every launch.
+        if (options.Value("--match") is { } pattern)
+        {
+            try { _ = new System.Text.RegularExpressions.Regex(pattern); }
+            catch (ArgumentException) { throw new ArgumentException(Loc.T("cli.error.bad_argument", "--match", pattern)); }
+        }
+
         var rule = new Rule
         {
             Name = options.Value("--name") ?? options.Value("--image") ?? "rule",
@@ -72,11 +83,16 @@ public static class Rules
             InTempPath = options.Has("--temp") ? true : null,
             MinRisk = options.Number("--risk", 0),
             Priority = options.Number("--priority", 100),
-            Action = Enum.TryParse<RuleAction>(options.Value("--action") ?? "log", true, out var parsed)
-                ? parsed
-                : RuleAction.Log,
+            Action = parsed,
             Note = options.Value("--note")
         };
+
+        // "rules add --action kill" with nothing else would end every process that starts.
+        if (Unconditional(rule) && rule.Action is RuleAction.Hide or RuleAction.Suspend or RuleAction.Kill or RuleAction.KillTree)
+        {
+            ConsoleHost.Bad(Loc.T("rules.needs_condition"));
+            return CommandRouter.ExitError;
+        }
 
         set.Rules.Add(rule);
         set.Save(AppPaths.Rules);
@@ -176,6 +192,13 @@ public static class Rules
         if (rule.Elevated == true) parts.Add("elevated");
         if (rule.InTempPath == true) parts.Add("temp-path");
         if (rule.MinRisk > 0) parts.Add("risk>=" + rule.MinRisk);
-        return parts.Count == 0 ? "(matches everything)" : string.Join(", ", parts);
+        return parts.Count == 0 ? Loc.T("rules.matches_everything") : string.Join(", ", parts);
     }
+
+    private static bool Unconditional(Rule rule)
+        => rule is
+        {
+            Image: null, ImagePath: null, CommandLine: null, Parent: null, Ancestor: null, Signer: null, User: null,
+            Unsigned: null, HiddenWindow: null, Elevated: null, InTempPath: null, SessionId: null, MinRisk: 0
+        };
 }

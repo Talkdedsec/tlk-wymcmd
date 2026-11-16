@@ -54,7 +54,7 @@ public static class Watch
             ConsoleHost.Line();
         }
 
-        var stopping = new TaskCompletionSource();
+        var stopping = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Console.CancelKeyPress += (_, e) =>
         {
             e.Cancel = true;

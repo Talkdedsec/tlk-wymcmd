@@ -17,8 +17,14 @@ public sealed record CliOptions(string[] Args)
         return null;
     }
 
+    /// <summary>A value that is there but is not a number is an error, not a reason to guess.</summary>
     public int Number(string flag, int fallback)
-        => int.TryParse(Value(flag), out var value) ? value : fallback;
+    {
+        var text = Value(flag);
+        if (text is null) return fallback;
+        if (int.TryParse(text, out var value)) return value;
+        throw new ArgumentException(Loc.T("cli.error.bad_argument", flag, text));
+    }
 
     /// <summary>
     /// The command word, if the caller gave one. Values that belong to a global flag
@@ -44,6 +50,9 @@ public sealed record CliOptions(string[] Args)
         for (var i = 0; i < Args.Length; i++)
         {
             var arg = Args[i];
+
+            // "service --lang tr" must not read "tr" as the thing to do.
+            if (GlobalValueFlags.Contains(arg, StringComparer.OrdinalIgnoreCase)) { i++; continue; }
             if (flagsWithValues.Contains(arg, StringComparer.OrdinalIgnoreCase)) { i++; continue; }
             if (arg.StartsWith('-')) continue;
             result.Add(arg);
@@ -64,6 +73,7 @@ public static class CommandRouter
     {
         var options = new CliOptions(args);
         Loc.Use(options.Value("--lang") ?? Loc.DetectSystemLanguage());
+        ConsoleHost.Machine = options.Json;
 
         var command = options.Command()?.ToLowerInvariant() ?? "help";
         var rest = new CliOptions(args.SkipWhile(a => !a.Equals(command, StringComparison.OrdinalIgnoreCase)).Skip(1).ToArray());

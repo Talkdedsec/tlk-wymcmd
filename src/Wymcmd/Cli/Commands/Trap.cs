@@ -49,7 +49,8 @@ public static class Trap
         };
 
         var caught = new List<ProcEvent>();
-        var finished = new TaskCompletionSource();
+        // Completed from inside the rule callback: the rest of this method must not run on the capture thread.
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         engine.RuleFired += (evt, _) =>
         {

@@ -93,10 +93,29 @@ public class ArgumentParsingTests
     [InlineData("2h", 120)]
     [InlineData("1d", 1440)]
     [InlineData("90s", 1.5)]
-    [InlineData("nonsense", 24 * 60)]
+    [InlineData("6", 360)]
     public void Time_spans_accept_the_shapes_people_type(string input, double expectedMinutes)
     {
         Assert.Equal(expectedMinutes, List.ParseSpan(input).TotalMinutes, 3);
+    }
+
+    /// <summary>A typo used to mean "the last day" without a word; the wrong window looks like a real answer.</summary>
+    [Theory]
+    [InlineData("nonsense")]
+    [InlineData("7x")]
+    [InlineData("")]
+    public void A_time_span_nobody_can_read_is_refused(string input)
+    {
+        Assert.Throws<ArgumentException>(() => List.ParseSpan(input));
+    }
+
+    [Fact]
+    public void A_number_that_is_not_one_is_refused_and_a_global_flag_is_not_a_command_word()
+    {
+        Assert.Throws<ArgumentException>(() => new Wymcmd.Cli.CliOptions(["--risk", "abc"]).Number("--risk", 0));
+        Assert.Equal(5, new Wymcmd.Cli.CliOptions(["--limit", "5"]).Number("--risk", 5));
+        Assert.Empty(new Wymcmd.Cli.CliOptions(["--lang", "tr"]).Positional());
+        Assert.Equal(["stop"], new Wymcmd.Cli.CliOptions(["stop", "--lang", "tr"]).Positional());
     }
 
     [Fact]

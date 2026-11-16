@@ -32,6 +32,12 @@ public static class Program
         {
             return CommandRouter.RunAsync(args).GetAwaiter().GetResult();
         }
+        catch (ArgumentException ex)
+        {
+            // A value the user typed wrong: say which one, nothing for the log.
+            ConsoleHost.Bad(ex.Message);
+            return CommandRouter.ExitError;
+        }
         catch (Exception ex)
         {
             Log.Error("command failed", ex);

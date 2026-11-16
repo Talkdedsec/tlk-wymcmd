@@ -214,6 +214,10 @@
     "history": "execution history"
   },
   "gui": {
+    "launches": "Launches",
+    "search_hint": "Search process, command or source",
+    "lived": "lived {0}",
+    "language": "Language",
     "not_watching": "not watching - showing recorded history",
     "start_watching": "Start watching",
     "stop_watching": "Stop watching",
@@ -320,6 +324,7 @@
     "disabled": "rule {0} disabled",
     "dry_run": "would have matched {0} recorded launch(es)",
     "matches_everything": "matches everything",
+    "needs_condition": "a rule that hides, suspends or kills needs at least one condition - without one it would hit every process that starts",
     "seed_from": "prefilled from {0}"
   },
   "export": {

@@ -15,6 +15,12 @@ public static class ConsoleHost
 
     public static bool Colors { get; private set; }
 
+    /// <summary>
+    /// Set for --json. Everything written for a person then goes to stderr, so whatever reads
+    /// stdout gets JSON and nothing else - also when the answer is "nothing matched".
+    /// </summary>
+    public static bool Machine { get; set; }
+
     public static void Attach()
     {
         if (_attached) return;
@@ -84,5 +90,9 @@ public static class ConsoleHost
         return color + text + Esc + "[0m";
     }
 
-    private static void Write(string text, string color) => Console.WriteLine(Paint(text, color));
+    private static void Write(string text, string color)
+    {
+        if (Machine) Console.Error.WriteLine(text);
+        else Console.WriteLine(Paint(text, color));
+    }
 }

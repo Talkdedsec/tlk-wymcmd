@@ -214,6 +214,10 @@
     "history": "çalışma geçmişi"
   },
   "gui": {
+    "launches": "Açılışlar",
+    "search_hint": "Süreç, komut ya da kaynak ara",
+    "lived": "{0} yaşadı",
+    "language": "Dil",
     "not_watching": "izleme kapalı - kayıtlı geçmiş gösteriliyor",
     "start_watching": "İzlemeye başla",
     "stop_watching": "İzlemeyi durdur",
@@ -320,6 +324,7 @@
     "disabled": "kural {0} kapatıldı",
     "dry_run": "kayıtlı {0} açılışta eşleşecekti",
     "matches_everything": "her şeyle eşleşir",
+    "needs_condition": "gizleyen, askıya alan ya da öldüren bir kuralın en az bir koşulu olmalı - koşulsuz kural başlayan her sürece uygulanır",
     "seed_from": "{0} açılışından dolduruldu"
   },
   "export": {

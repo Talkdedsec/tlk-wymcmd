@@ -39,7 +39,10 @@ public sealed partial class TimelineViewModel(EventStore store) : ObservableObje
             return;
         }
 
-        var radius = Cli.Commands.List.ParseSpan(Radius);
+        TimeSpan radius;
+        try { radius = Cli.Commands.List.ParseSpan(Radius); }
+        catch (ArgumentException ex) { Message = ex.Message; return; }
+
         var consoleOnly = ConsoleOnly;
 
         Busy = true;
