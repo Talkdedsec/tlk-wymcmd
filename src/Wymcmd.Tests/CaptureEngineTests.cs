@@ -76,6 +76,39 @@ public sealed class CaptureEngineTests : IDisposable
     }
 
     /// <summary>
+    /// The watch button: on, off, on. The second "on" used to return at its first line because
+    /// the worker from the first one was still there, while the window said it was watching.
+    /// </summary>
+    [Fact]
+    public async Task Capture_that_was_stopped_can_be_started_again()
+    {
+        await using var store = new EventStore(_path);
+        var script = new Script();
+        await using var engine = new CaptureEngine(store, new ProcessTree(), Attribution(), collector: script);
+
+        var seen = new List<int>();
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.Observed += evt =>
+        {
+            lock (seen) seen.Add(evt.Pid);
+            if (evt.Pid == 920_002) second.TrySetResult();
+        };
+
+        engine.Start();
+        engine.Stop();
+
+        // Nothing is listening now, so this one is rightly lost.
+        script.Launch(920_001, "while-stopped.exe", DateTime.Now);
+
+        engine.Start();
+        script.Launch(920_002, "after-restart.exe", DateTime.Now);
+
+        var winner = await Task.WhenAny(second.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+        Assert.Same(second.Task, winner);
+        lock (seen) Assert.Equal([920_002], seen);
+    }
+
+    /// <summary>
     /// Whether a console has a window is only known a moment after it starts. A rule that asks
     /// for a hidden window has to be asked again then, or it never matches anything.
     /// </summary>
@@ -111,6 +144,61 @@ public sealed class CaptureEngineTests : IDisposable
         finally
         {
             try { hidden.Kill(entireProcessTree: true); } catch { /* already gone */ }
+        }
+    }
+
+    /// <summary>
+    /// A trace session's clock drifts from the system's over a long run, and a kill compares the
+    /// launch's start time with what Windows reports. Once the engine has seen the two clocks
+    /// disagree the same way a few times, launches are put on the system's clock and can be killed.
+    /// </summary>
+    [Fact]
+    public async Task Launches_stay_killable_when_the_trace_clock_has_drifted()
+    {
+        using var real = Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 6 127.0.0.1 >nul")
+        {
+            UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        })!;
+
+        try
+        {
+            await using var store = new EventStore(_path);
+            var script = new Script();
+            await using var engine = new CaptureEngine(store, new ProcessTree(), Attribution(), collector: script);
+
+            var seen = new List<ProcEvent>();
+            var enough = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            engine.Observed += evt =>
+            {
+                if (evt.Pid != real.Id) return;
+                lock (seen)
+                {
+                    seen.Add(evt);
+                    if (seen.Count == 6) enough.TrySetResult();
+                }
+            };
+            engine.Start();
+
+            // A trace clock three seconds ahead, as far as the engine can tell from six launches.
+            var drifted = real.StartTime.AddSeconds(3);
+            for (var i = 0; i < 6; i++) script.Launch(real.Id, "cmd.exe", drifted);
+
+            var winner = await Task.WhenAny(enough.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+            Assert.Same(enough.Task, winner);
+
+            ProcEvent first, last;
+            lock (seen) { first = seen[0]; last = seen[5]; }
+
+            Assert.Equal(drifted, first.StartTime);          // one odd sample changes nothing
+            Assert.Equal(real.StartTime, last.StartTime);    // five that agree do
+
+            Assert.Equal(Wymcmd.Core.Actions.ActionOutcome.Done,
+                Wymcmd.Core.Actions.ProcessActions.Kill(last.Pid, last.ImageName, last.StartTime).Outcome);
+        }
+        finally
+        {
+            try { real.Kill(entireProcessTree: true); } catch { /* already gone */ }
         }
     }
 

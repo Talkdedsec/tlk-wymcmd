@@ -69,7 +69,7 @@ public static class PathInstaller
         return removed;
     }
 
-    private static bool CopyPayload(string directory)
+    internal static bool CopyPayload(string directory)
     {
         var source = Environment.ProcessPath;
         if (source is null) return false;

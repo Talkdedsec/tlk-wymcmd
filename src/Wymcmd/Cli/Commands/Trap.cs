@@ -19,6 +19,12 @@ public static class Trap
         var duration = List.ParseSpan(options.Value("--for") ?? "1h");
         var once = options.Has("--once");
 
+        var rule = BuildRule(options);
+        return await RunAsync(options, rule, duration, once);
+    }
+
+    internal static Rule BuildRule(CliOptions options)
+    {
         var rule = new Rule
         {
             Name = "trap",
@@ -32,13 +38,18 @@ public static class Trap
             Action = ParseAction(options.Value("--action"))
         };
 
-        if (rule.Image is null && rule.CommandLine is null && rule.Parent is null &&
+        if (rule.Image is null && rule.ImagePath is null && rule.CommandLine is null && rule.Parent is null &&
             rule.Unsigned is null && rule.HiddenWindow is null && rule.MinRisk == 0)
         {
             // No filter given: watch consoles, the thing this tool is named after.
             rule.Image = "cmd.exe";
         }
 
+        return rule;
+    }
+
+    private static async Task<int> RunAsync(CliOptions options, Rule rule, TimeSpan duration, bool once)
+    {
         await using var store = new EventStore();
         var tree = new ProcessTree();
         var rules = new RuleSet { Rules = [rule] };

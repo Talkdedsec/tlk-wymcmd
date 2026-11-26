@@ -82,6 +82,49 @@ public sealed class ForensicHarvester(EventStore? store = null)
         return results;
     }
 
+    /// <summary>
+    /// Brings what Windows recorded while nothing of ours was running into the database, so the
+    /// window shows it the next time it opens: the black box, the Security log, Sysmon. That
+    /// includes launches from before anyone logged on, which no window could have watched.
+    /// Returns how many launches were new.
+    /// </summary>
+    public int CatchUp(DateTime from, DateTime to)
+    {
+        if (store is null) return 0;
+
+        const int most = 100_000;
+        var known = store.Query(new EventFilter { From = from - SameLaunch, To = to + SameLaunch, Limit = most });
+
+        // The query returns the newest rows first and stops at its limit. On a machine busy
+        // enough to hit it, anything older was not compared, so it is not caught up either.
+        if (known.Count == most) from = known.Min(evt => evt.StartTime) + SameLaunch;
+
+        var fresh = NotYetKnown(Window(from, to, 20_000), known);
+
+        foreach (var evt in fresh) store.Enqueue(evt);
+        return fresh.Count;
+    }
+
+    /// <summary>
+    /// Sources do not share a clock: a trace counts from the moment its session opened, and on a
+    /// machine that has been up for days that is seconds away from the system time the database
+    /// rows carry. A launch is the same one if pid and image match and the times are this close.
+    /// </summary>
+    private static readonly TimeSpan SameLaunch = TimeSpan.FromSeconds(10);
+
+    internal static List<ProcEvent> NotYetKnown(IEnumerable<ProcEvent> harvested, IEnumerable<ProcEvent> known)
+    {
+        var seen = known.ToLookup(evt => evt.Pid);
+
+        return harvested
+            .Where(evt => evt.RowId == 0)
+            .Where(evt => !seen[evt.Pid].Any(row =>
+                (row.StartTime - evt.StartTime).Duration() <= SameLaunch &&
+                (row.ImageName.Length == 0 || evt.ImageName.Length == 0 ||
+                 row.ImageName.Equals(evt.ImageName, StringComparison.OrdinalIgnoreCase))))
+            .ToList();
+    }
+
     /// <summary>Everything that happened around a moment, newest sources merged in.</summary>
     public IReadOnlyList<ProcEvent> Around(DateTime moment, TimeSpan radius)
         => Window(moment - radius, moment + radius);

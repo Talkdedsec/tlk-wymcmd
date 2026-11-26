@@ -6,11 +6,28 @@ namespace Wymcmd.Core.Store;
 /// </summary>
 public static class AppPaths
 {
-    private static readonly Lazy<string> RootPath = new(ResolveRoot);
+    private static string? _root;
 
-    public static string Root => RootPath.Value;
+    public static string Root => _root ??= ResolveRoot();
+
+    /// <summary>Forget the resolved root, for the one moment it changes: setup creating the shared folder.</summary>
+    internal static void Reset() => _root = null;
+
+    public static bool IsShared => string.Equals(Root, SharedRoot.Path, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Where the files a LocalSystem service acts on live. In the shared folder that is a
+    /// subfolder only administrators can write; in a per-user folder the user already owns it all.
+    /// </summary>
+    public static string Protected => IsShared ? SharedRoot.ProtectedPath : Root;
+
     public static string Database => Path.Combine(Root, "events.db");
-    public static string Rules => Path.Combine(Root, "rules.json");
+    public static string Rules => Path.Combine(Protected, "rules.json");
+
+    /// <summary>Where rules lived before 0.4.2. Read for display until setup moves them, never by the service.</summary>
+    public static string LegacyRules => Path.Combine(Root, "rules.json");
+    public static string SetupJournal => Path.Combine(Protected, "setup-journal.json");
+    public static string LegacySetupJournal => Path.Combine(Root, "setup-journal.json");
     public static string Settings => Path.Combine(Root, "settings.json");
     public static string LogFile => Path.Combine(Root, "wymcmd.log");
     public static string BlackBoxTrace => Path.Combine(Root, "blackbox.etl");

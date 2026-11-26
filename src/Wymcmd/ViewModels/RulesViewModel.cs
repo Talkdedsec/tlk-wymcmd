@@ -56,7 +56,7 @@ public sealed partial class RulesViewModel : ObservableObject
     public RulesViewModel(EventStore store, ProcEvent? seed)
     {
         _store = store;
-        _set = RuleSet.Load(AppPaths.Rules);
+        _set = RuleSet.LoadCurrent();
         Seed = seed;
         Load();
     }
@@ -86,10 +86,30 @@ public sealed partial class RulesViewModel : ObservableObject
         Message = Rules.Count == 0 ? Loc.T("rules.empty") : "";
     }
 
+    /// <summary>
+    /// Rules in the shared folder take an administrator. When the prompt is declined nothing was
+    /// saved, so the list goes back to what is on disk instead of showing a change that is not there.
+    /// </summary>
+    private bool Persist()
+    {
+        try
+        {
+            _set.SaveCurrent();
+            return true;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            _set = RuleSet.LoadCurrent();
+            Load();
+            Message = ex is UnauthorizedAccessException ? Loc.T("cli.error.needs_admin") : ex.Message;
+            return false;
+        }
+    }
+
     [RelayCommand]
     private void Save()
     {
-        _set.Save(AppPaths.Rules);
+        if (!Persist()) return;
         Message = Loc.T("gui.action_done");
         Load();
     }
@@ -100,7 +120,7 @@ public sealed partial class RulesViewModel : ObservableObject
         if (Selected is null) return;
 
         _set.Rules.Remove(Selected.Rule);
-        _set.Save(AppPaths.Rules);
+        if (!Persist()) return;
         Load();
     }
 
@@ -125,7 +145,7 @@ public sealed partial class RulesViewModel : ObservableObject
         if (Seed.Chain.FirstOrDefault()?.ImageName is { Length: > 0 } parent) rule.Parent = parent;
 
         _set.Rules.Add(rule);
-        _set.Save(AppPaths.Rules);
+        if (!Persist()) return;
         Load();
 
         Selected = Rules.FirstOrDefault(row => row.Rule.Id == rule.Id);
@@ -135,7 +155,7 @@ public sealed partial class RulesViewModel : ObservableObject
     [RelayCommand]
     private void Reload()
     {
-        _set = RuleSet.Load(AppPaths.Rules);
+        _set = RuleSet.LoadCurrent();
         Load();
     }
 }

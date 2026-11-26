@@ -17,14 +17,26 @@ namespace Wymcmd.Core.Ipc;
 /// </summary>
 public sealed class PipeServer : IDisposable
 {
-    private readonly ConcurrentDictionary<NamedPipeServerStream, StreamWriter> _clients = new();
+    /// <summary>
+    /// How long a broadcast may take, however many clients there are. A reader that has fallen
+    /// 64 KB behind is not going to catch up in the next quarter second.
+    /// </summary>
+    private static readonly TimeSpan WriteBudget = TimeSpan.FromMilliseconds(250);
+
+    private readonly ConcurrentDictionary<NamedPipeServerStream, byte> _clients = new();
     private readonly CancellationTokenSource _shutdown = new();
+    private readonly string _pipeName;
     private Task? _accepting;
+
+    /// <param name="pipeName">Another name than the service's own - what the tests listen on.</param>
+    public PipeServer(string? pipeName = null) => _pipeName = pipeName ?? AppPaths.PipeName;
+
+    public int ClientCount => _clients.Count;
 
     public void Start()
     {
         _accepting ??= Task.Run(() => AcceptLoopAsync(_shutdown.Token));
-        Log.Info($"pipe server listening on \\\\.\\pipe\\{AppPaths.PipeName}");
+        Log.Info($"pipe server listening on \\\\.\\pipe\\{_pipeName}");
     }
 
     public void Broadcast(ProcEvent evt)
@@ -45,17 +57,30 @@ public sealed class PipeServer : IDisposable
             sourceName = evt.Source?.Name
         });
 
-        foreach (var (stream, writer) in _clients)
+        var bytes = Encoding.UTF8.GetBytes(line + "\n");
+
+        // This runs on the capture worker. A client that stopped reading fills its buffer and
+        // the next write waits for it - which used to mean capture and rule enforcement waited
+        // too, for as long as any logged-in user cared to hold them. Every write is started
+        // first and they share one budget, so two hundred silent clients cost what one does.
+        var writes = new List<(NamedPipeServerStream Stream, Task Write)>();
+        foreach (var stream in _clients.Keys)
         {
             try
             {
-                writer.WriteLine(line);
+                writes.Add((stream, stream.WriteAsync(bytes).AsTask()));
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
                 Drop(stream);
             }
         }
+
+        try { Task.WaitAll(writes.Select(w => w.Write).ToArray(), WriteBudget); }
+        catch (AggregateException) { /* the ones that failed are dropped below */ }
+
+        foreach (var (stream, write) in writes)
+            if (!write.IsCompletedSuccessfully) Drop(stream);
     }
 
     private async Task AcceptLoopAsync(CancellationToken token)
@@ -68,8 +93,7 @@ public sealed class PipeServer : IDisposable
                 stream = Create();
                 await stream.WaitForConnectionAsync(token);
 
-                var writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
-                _clients[stream] = writer;
+                _clients[stream] = 0;
                 Log.Debug("pipe client connected");
             }
             catch (OperationCanceledException)
@@ -86,7 +110,7 @@ public sealed class PipeServer : IDisposable
         }
     }
 
-    private static NamedPipeServerStream Create()
+    private NamedPipeServerStream Create()
     {
         // Administrators and the interactive user may read; nobody else can see the stream.
         var security = new PipeSecurity();
@@ -101,7 +125,7 @@ public sealed class PipeServer : IDisposable
             PipeAccessRights.FullControl, AccessControlType.Allow));
 
         return NamedPipeServerStreamAcl.Create(
-            AppPaths.PipeName,
+            _pipeName,
             PipeDirection.Out,
             NamedPipeServerStream.MaxAllowedServerInstances,
             PipeTransmissionMode.Byte,

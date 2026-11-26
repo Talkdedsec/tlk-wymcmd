@@ -163,12 +163,41 @@ public static class BlackBoxInstaller
 
             enable(session);
             session.Dispose();
+            SetFlushTimer(name);
             Log.Info($"black box session '{name}' recording into {Path.GetFileName(file)}");
         }
         catch (Exception ex)
         {
             // A machine that refuses one session still has the other, and both come back at boot.
             Log.Warn($"could not start '{name}' now, it will start at the next boot: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The registry entry gives the session Windows starts at boot a flush timer. A session
+    /// started by hand has none: it writes a buffer to the file only when the buffer is full, and
+    /// with a few hundred bytes per launch that is hours away. Until the next boot the trace
+    /// stayed at zero bytes and there was nothing to read back.
+    /// </summary>
+    private static void SetFlushTimer(string name)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                "logman.exe", $"update \"{name}\" -ft 5 -ets")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+
+            if (process is null || !process.WaitForExit(10_000) || process.ExitCode != 0)
+                Log.Warn($"'{name}' has no flush timer until the next boot; what it records shows up late");
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"could not set a flush timer on '{name}': {ex.Message}");
         }
     }
 

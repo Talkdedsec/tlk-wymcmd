@@ -19,7 +19,9 @@ public static class KillGuard
     public static readonly int SelfPid = Environment.ProcessId;
 
     public static bool IsProtected(int pid, string imageName)
-        => pid <= 10 || pid == SelfPid || Protected.Contains(imageName.Trim());
+        => pid <= 10 || pid == SelfPid || IsProtectedName(imageName);
+
+    public static bool IsProtectedName(string imageName) => Protected.Contains(imageName.Trim());
 
     public static bool IsProtected(int pid)
     {

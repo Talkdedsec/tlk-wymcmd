@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Win32;
 using Wymcmd.Core.Diagnostics;
@@ -19,7 +20,8 @@ public static class AuditPolicySetup
     private const string CommandLineKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit";
     private const string ScriptBlockKey = @"SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging";
 
-    private static string JournalPath => Path.Combine(AppPaths.Root, "setup-journal.json");
+    // Kept where only administrators can write: whoever edits this decides what uninstall turns off.
+    private static string JournalPath => AppPaths.SetupJournal;
 
     public sealed record Journal
     {
@@ -33,6 +35,15 @@ public static class AuditPolicySetup
     public static Journal ReadJournal()
     {
         if (!File.Exists(JournalPath)) return new Journal();
+
+        // In the shared folder the journal is only believed if nobody but an administrator could
+        // have written it: a journal that says "we turned this on" gets it turned off.
+        if (AppPaths.IsShared && !FileTrust.IsAdminOnly(JournalPath))
+        {
+            Log.Error($"{JournalPath} can be changed by non-administrators; it is ignored");
+            return new Journal();
+        }
+
         try
         {
             return JsonSerializer.Deserialize<Journal>(File.ReadAllText(JournalPath)) ?? new Journal();
@@ -46,8 +57,9 @@ public static class AuditPolicySetup
     private static void WriteJournal(Journal journal)
     {
         journal.ChangedAt = DateTime.Now;
-        Directory.CreateDirectory(AppPaths.Root);
+        Directory.CreateDirectory(Path.GetDirectoryName(JournalPath)!);
         File.WriteAllText(JournalPath, JsonSerializer.Serialize(journal, new JsonSerializerOptions { WriteIndented = true }));
+        if (AppPaths.IsShared) SharedRoot.Seal(JournalPath);
     }
 
     public static IReadOnlyList<string> EnableAll()
@@ -57,7 +69,7 @@ public static class AuditPolicySetup
         var journal = ReadJournal();
         var changed = new List<string>();
 
-        if (EnableProcessCreationAudit())
+        if (EnableProcessCreationAudit(SuccessAuditOn, RunAuditPol))
         {
             journal.EnabledProcessAudit = true;
             changed.Add("security_audit");
@@ -91,7 +103,8 @@ public static class AuditPolicySetup
         var journal = ReadJournal();
         var reverted = new List<string>();
 
-        if (journal.EnabledProcessAudit && RunAuditPol("/success:disable /failure:disable"))
+        // Only success auditing was ours to turn on; failure auditing is left as it was found.
+        if (journal.EnabledProcessAudit && RunAuditPol("/success:disable"))
             reverted.Add("security_audit");
 
         if (journal.EnabledCommandLine && SetDword(Registry.LocalMachine, CommandLineKey, "ProcessCreationIncludeCmdLine_Enabled", 0))
@@ -103,11 +116,56 @@ public static class AuditPolicySetup
         if (journal.EnabledTaskLog && SetEventLog(SourceInspector.TaskLogName, false))
             reverted.Add("task_log");
 
-        if (File.Exists(JournalPath)) File.Delete(JournalPath);
+        foreach (var path in new[] { JournalPath, AppPaths.LegacySetupJournal })
+            if (File.Exists(path)) File.Delete(path);
         return reverted;
     }
 
-    private static bool EnableProcessCreationAudit() => RunAuditPol("/success:enable");
+    /// <summary>
+    /// True only when success auditing was off and this call turned it on. Auditing that was
+    /// already on is not ours, and neither is auditing whose earlier state could not be read:
+    /// uninstall switches off what this returns true for.
+    /// </summary>
+    internal static bool EnableProcessCreationAudit(Func<bool?> successAuditOn, Func<string, bool> auditPol)
+    {
+        var before = successAuditOn();
+        if (before == true) return false;
+
+        return auditPol("/success:enable") && before == false;
+    }
+
+    private const uint AuditSuccess = 0x1;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct AUDIT_POLICY_INFORMATION
+    {
+        public Guid AuditSubCategoryGuid;
+        public uint AuditingInformation;
+        public Guid AuditCategoryGuid;
+    }
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    private static extern bool AuditQuerySystemPolicy(ref Guid subCategory, uint count, out IntPtr policy);
+
+    [DllImport("advapi32.dll")]
+    private static extern void AuditFree(IntPtr buffer);
+
+    /// <summary>Asks Windows directly: auditpol prints its answer in the system language.</summary>
+    private static bool? SuccessAuditOn()
+    {
+        var subcategory = Guid.Parse(ProcessCreationSubcategory);
+        if (!AuditQuerySystemPolicy(ref subcategory, 1, out var buffer) || buffer == IntPtr.Zero) return null;
+
+        try
+        {
+            return (Marshal.PtrToStructure<AUDIT_POLICY_INFORMATION>(buffer).AuditingInformation & AuditSuccess) != 0;
+        }
+        finally
+        {
+            AuditFree(buffer);
+        }
+    }
 
     private static bool RunAuditPol(string switches)
     {

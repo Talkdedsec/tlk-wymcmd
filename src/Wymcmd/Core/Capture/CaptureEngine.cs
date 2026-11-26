@@ -36,6 +36,11 @@ public sealed class CaptureEngine : IAsyncDisposable
     private ICollector? _collector;
     private int _enriched;
 
+    private static readonly TimeSpan DeadRecordRetention = TimeSpan.FromHours(24);
+
+    /// <summary>Only the worker touches it.</summary>
+    private readonly ClockOffset _clock = new();
+
     private WatchLedger? _ledger;
     private System.Threading.Timer? _beat;
     private long _watchId;
@@ -66,19 +71,31 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     public void Start()
     {
-        if (_worker is not null) return;
+        // Stop clears the collector and leaves the worker running, so the collector is what says
+        // whether capture is on. Asking the worker made a second Start do nothing at all.
+        if (_collector is not null) return;
 
         _tree.Seed();
         Log.Info($"process tree seeded with {_tree.Count} records");
 
         Maintenance.RunInBackground(_store);
 
-        _collector = SelectCollector();
-        _collector.Started += OnStarted;
-        _collector.Stopped += OnStopped;
-        _collector.Start();
+        var collector = SelectCollector();
+        collector.Started += OnStarted;
+        collector.Stopped += OnStopped;
+        try
+        {
+            collector.Start();
+        }
+        catch
+        {
+            collector.Started -= OnStarted;
+            collector.Stopped -= OnStopped;
+            throw;
+        }
 
-        _worker = Task.Run(() => EnrichLoopAsync(_shutdown.Token));
+        _collector = collector;
+        _worker ??= Task.Run(() => EnrichLoopAsync(_shutdown.Token));
 
         OpenWatch();
     }
@@ -136,8 +153,11 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     private void OnStopped(RawStop raw) => _incoming.Writer.TryWrite(raw);
 
-    private void Finish(RawStop raw)
+    private void Finish(RawStop stop)
     {
+        // Exits go on the same clock as starts, or a lifetime would be off by the drift.
+        var raw = stop with { TimeStamp = stop.TimeStamp + _clock.Value };
+
         _tree.MarkExit(raw.Pid, raw.TimeStamp, raw.ExitCode);
 
         // The row may still be waiting in the store's write queue, where an UPDATE finds nothing.
@@ -175,7 +195,14 @@ public sealed class CaptureEngine : IAsyncDisposable
                 var fired = Apply(evt);
 
                 _store.Enqueue(evt);
-                if (++_enriched % 250 == 0) Log.Info($"events enriched and queued: {_enriched}");
+                if (++_enriched % 250 == 0)
+                {
+                    Log.Info($"events enriched and queued: {_enriched}");
+
+                    // A service runs for weeks. Records of the dead are kept a day, long enough to
+                    // name the parent of anything that starts today, and then let go.
+                    _tree.Prune(DeadRecordRetention);
+                }
                 Observed?.Invoke(evt);
 
                 if (evt.IsConsoleHost) _ = ResolveWindowLaterAsync(evt, fired);
@@ -201,6 +228,12 @@ public sealed class CaptureEngine : IAsyncDisposable
             ? ProcessQuery.CommandLine(raw.Pid) ?? ""
             : raw.CommandLine;
 
+        // While the process is still there, Windows can say when it started; the difference
+        // from what the trace said is one more sample of how far the two clocks are apart.
+        if (ProcessQuery.StartTime(raw.Pid) is { } created) _clock.Sample(created - raw.TimeStamp);
+
+        var started = raw.TimeStamp + _clock.Value;
+
         var record = _tree.Add(new ProcRecord
         {
             Pid = raw.Pid,
@@ -209,19 +242,19 @@ public sealed class CaptureEngine : IAsyncDisposable
             ImageName = raw.ImageName,
             ImagePath = imagePath,
             CommandLine = commandLine,
-            StartTime = raw.TimeStamp,
+            StartTime = started,
             SessionId = raw.SessionId
         });
 
         var (sid, user) = ProcessQuery.User(raw.Pid);
-        var parent = _tree.Resolve(raw.ParentPid, raw.TimeStamp) ?? ReadParent(raw);
+        var parent = _tree.Resolve(raw.ParentPid, started) ?? ReadParent(raw);
 
         var evt = new ProcEvent
         {
             Pid = raw.Pid,
             ParentPid = raw.ParentPid,
             StartKey = raw.StartKey,
-            StartTime = raw.TimeStamp,
+            StartTime = started,
             ImageName = raw.ImageName,
             ImagePath = imagePath,
             CommandLine = commandLine,
@@ -259,7 +292,7 @@ public sealed class CaptureEngine : IAsyncDisposable
         if (raw.ParentPid <= 4 || ProcessQuery.ImagePath(raw.ParentPid) is not { Length: > 0 } path) return null;
 
         var started = ProcessQuery.StartTime(raw.ParentPid);
-        if (started is null || started > raw.TimeStamp.AddSeconds(2)) return null;
+        if (started is null || started > (raw.TimeStamp + _clock.Value).AddSeconds(2)) return null;
 
         return _tree.Add(new ProcRecord
         {
@@ -331,9 +364,9 @@ public sealed class CaptureEngine : IAsyncDisposable
 
         var result = rule.Action switch
         {
-            RuleAction.Kill => ProcessActions.Kill(evt.Pid, evt.ImageName),
-            RuleAction.KillTree => ProcessActions.KillTree(_tree, evt.Pid),
-            RuleAction.Suspend => ProcessActions.Suspend(evt.Pid),
+            RuleAction.Kill => ProcessActions.Kill(evt.Pid, evt.ImageName, evt.StartTime),
+            RuleAction.KillTree => ProcessActions.KillTree(_tree, evt.Pid, evt.StartTime),
+            RuleAction.Suspend => ProcessActions.Suspend(evt.Pid, evt.StartTime),
             RuleAction.Hide => ProcessActions.HideWindow(evt.Pid),
             _ => new ActionResult(ActionOutcome.Done)
         };
@@ -343,9 +376,14 @@ public sealed class CaptureEngine : IAsyncDisposable
 
     public void Stop()
     {
-        _collector?.Stop();
-        _collector?.Dispose();
-        _collector = null;
+        if (_collector is { } collector)
+        {
+            collector.Started -= OnStarted;
+            collector.Stopped -= OnStopped;
+            collector.Stop();
+            collector.Dispose();
+            _collector = null;
+        }
 
         CloseWatch();
     }

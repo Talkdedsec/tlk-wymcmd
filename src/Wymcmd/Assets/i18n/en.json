@@ -285,7 +285,7 @@
   "blackbox": {
     "installed": "black box installed, {0} MB circular trace",
     "removed": "black box removed",
-    "reboot_note": "starts recording at the next boot - no wymcmd process stays resident",
+    "reboot_note": "recording from now on, and Windows starts it again at every boot - no wymcmd process stays resident",
     "no_process": "no resident process: Windows writes this trace itself",
     "how_to_enable": "enable with: wymcmd blackbox on",
     "with_command_lines": "system trace - records command lines",

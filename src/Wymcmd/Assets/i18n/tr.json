@@ -285,7 +285,7 @@
   "blackbox": {
     "installed": "kara kutu kuruldu, {0} MB dairesel kayıt",
     "removed": "kara kutu kaldırıldı",
-    "reboot_note": "kayıt bir sonraki açılışta başlar - yerleşik hiçbir wymcmd süreci kalmaz",
+    "reboot_note": "kayıt şu andan itibaren açık, Windows her açılışta yeniden başlatır - yerleşik hiçbir wymcmd süreci kalmaz",
     "no_process": "yerleşik süreç yok: bu kaydı Windows'un kendisi yazıyor",
     "how_to_enable": "açmak için: wymcmd blackbox on",
     "with_command_lines": "sistem izi - komut satırlarını da kaydeder",

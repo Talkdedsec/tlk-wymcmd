@@ -106,7 +106,20 @@ public sealed class AutostartIndex
         if (target.Length > 0)
         {
             if (target == fullImage) score += 4;
-            else if (Normalize(Path.GetFileName(entry.TargetImage ?? "")) == image) score += 2;
+
+            // The same file name alone is not evidence: a launch recorded without its folder is
+            // just "cmd.exe", and every task that runs cmd.exe would claim every console whose
+            // parent is unknown. It counts once the command line agrees as well.
+            else if (Normalize(Path.GetFileName(entry.TargetImage ?? "")) == image)
+            {
+                score += 1;
+
+                // The registered command and the real one often spell the program differently
+                // (bare name, full path, quotes), so one rarely contains the other. What comes
+                // after the program is the part that identifies the entry.
+                var arguments = Arguments(command);
+                if (arguments.Length >= 4 && Normalize(commandLine).Contains(arguments)) score += 1;
+            }
         }
 
         // One text inside the other only means something when the inner one is long enough to be
@@ -120,6 +133,14 @@ public sealed class AutostartIndex
         }
 
         return score;
+    }
+
+    /// <summary>A command line without its first word, the program.</summary>
+    private static string Arguments(string command)
+    {
+        var text = command.TrimStart();
+        var end = text.StartsWith('"') ? text.IndexOf('"', 1) + 1 : text.IndexOf(' ');
+        return end <= 0 || end >= text.Length ? "" : text[end..].Trim();
     }
 
     private static string Normalize(string value)

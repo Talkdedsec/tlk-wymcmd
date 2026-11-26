@@ -36,7 +36,52 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _flush.Start();
 
         LoadHistory();
+        _ = CatchUpAsync();
     }
+
+    private bool _catchingUp;
+    private DateTime? _caughtUpTo;
+
+    // The view model is built before the application starts pumping messages, so there is no
+    // synchronization context for an await to come back on. The list belongs to this thread.
+    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+
+    /// <summary>
+    /// The list comes from the database, and the database only knows what was captured while a
+    /// window or the service was running. Whatever Windows itself recorded in between - the black
+    /// box from the moment the machine booted, the Security log, Sysmon - is read here, off the
+    /// interface thread, and the list is loaded again once it is in.
+    /// </summary>
+    private async Task CatchUpAsync()
+    {
+        if (_catchingUp) return;
+        _catchingUp = true;
+
+        try
+        {
+            // The first run reads the whole window; later ones only what came after it.
+            var now = DateTime.Now;
+            var from = _caughtUpTo is { } last ? last.AddMinutes(-1) : now - HistoryWindow;
+
+            var added = await Task.Run(() => new Core.Forensic.ForensicHarvester(_store).CatchUp(from, now)).ConfigureAwait(false);
+            _caughtUpTo = now;
+            if (added == 0) return;
+
+            await _store.FlushAsync().ConfigureAwait(false);
+            await _dispatcher.InvokeAsync(LoadHistory);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("could not catch up on what was recorded while closed: " + ex.Message);
+        }
+        finally
+        {
+            _catchingUp = false;
+        }
+    }
+
+    /// <summary>How far back the list goes, and so how far back catching up has to reach.</summary>
+    private static readonly TimeSpan HistoryWindow = TimeSpan.FromDays(3);
 
     /// <summary>Shared with the statistics window so both read the same database handle.</summary>
     public EventStore Store => _store;
@@ -103,7 +148,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Events.Clear();
         foreach (var evt in _store.Query(new EventFilter
         {
-            From = DateTime.Now.AddDays(-3),
+            From = DateTime.Now - HistoryWindow,
             ConsoleOnly = ConsoleOnly,
             HiddenOnly = HiddenOnly,
             UnsignedOnly = UnsignedOnly,
@@ -155,8 +200,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             }
             else
             {
-                _engine ??= new CaptureEngine(_store, _tree, new AttributionEngine(_autostart), RuleSet.Load(AppPaths.Rules));
-                _engine.Observed += OnObserved;
+                if (_engine is null)
+                {
+                    _engine = new CaptureEngine(_store, _tree, new AttributionEngine(_autostart), RuleSet.LoadCurrent());
+                    _engine.Observed += OnObserved;
+                }
                 _engine.Start();
             }
 
@@ -239,7 +287,11 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void Refresh() => LoadHistory();
+    private void Refresh()
+    {
+        LoadHistory();
+        _ = CatchUpAsync();
+    }
 
     /// <summary>Writes what the current filter shows, in the format the chosen extension implies.</summary>
     public void Export()
@@ -276,11 +328,20 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         StatusText = Loc.T("gui.export_done", events.Count, dialog.FileName);
     }
 
+    /// <summary>
+    /// A row captured live carries a start time on the system clock and is matched tightly. A row
+    /// that came from a trace or a log was stamped by another clock, seconds off on a machine
+    /// that has been up for days - and a console from boot that is still running is exactly the
+    /// one somebody opens the window to end.
+    /// </summary>
+    private static TimeSpan? SlackFor(ProcEvent evt)
+        => (evt.Sources & (EvidenceSource.Etw | EvidenceSource.Wmi)) != 0 ? null : TimeSpan.FromSeconds(30);
+
     [RelayCommand]
     private void KillSelected()
     {
         if (Selected is null) return;
-        var result = ProcessActions.Kill(Selected.Pid, Selected.ImageName);
+        var result = ProcessActions.Kill(Selected.Pid, Selected.ImageName, Selected.StartTime, SlackFor(Selected));
         StatusText = result.Outcome switch
         {
             ActionOutcome.Done => Loc.T("kill.done", Selected.Pid, result.Affected),
@@ -295,7 +356,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private void KillTreeSelected()
     {
         if (Selected is null) return;
-        var result = ProcessActions.KillTree(_tree, Selected.Pid);
+        var result = ProcessActions.KillTree(_tree, Selected.Pid, Selected.StartTime, SlackFor(Selected));
         StatusText = Loc.T("kill.done", Selected.Pid, result.Affected);
     }
 
@@ -315,7 +376,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
                      .Where(r => ProcEvent.ConsoleImages.Contains(r.ImageName))
                      .Where(r => r.Pid != Environment.ProcessId))
         {
-            if (ProcessActions.Kill(record.Pid, record.ImageName).Success) killed++;
+            if (ProcessActions.Kill(record.Pid, record.ImageName, record.StartTime).Success) killed++;
         }
 
         StatusText = Loc.T("gui.panic_done", killed);

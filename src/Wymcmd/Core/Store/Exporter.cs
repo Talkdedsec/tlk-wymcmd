@@ -70,7 +70,14 @@ public static class Exporter
     }
 
     private static string Quote(string value)
-        => value.Contains(',') || value.Contains('"') || value.Contains('\n')
+    {
+        // A spreadsheet treats a cell that starts with one of these as a formula and runs it.
+        // Command lines and task names are written by whoever started the process, so a leading
+        // quote turns them back into text. The jsonl export is the one to feed to a program.
+        if (value.Length > 0 && "=+-@\t\r".Contains(value[0])) value = "'" + value;
+
+        return value.IndexOfAny([',', '"', '\n', '\r']) >= 0
             ? "\"" + value.Replace("\"", "\"\"") + "\""
             : value;
+    }
 }

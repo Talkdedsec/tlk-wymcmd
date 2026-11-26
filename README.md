@@ -64,6 +64,12 @@ source, **Rules** shows each rule with how often it would have fired and can wri
 selected launch, **Stats** reads the patterns out of your history, **Sources** turns the Windows
 recording on or off, and **Export** writes what you are looking at as CSV, JSON lines or a report.
 
+Opening the window catches up first: what the black box recorded while wymcmd was not running
+is brought into the list for the last three days, launches from the moment the machine booted and
+before anyone logged on included. That needs `wymcmd blackbox on` once, as administrator; without
+it there is nothing to catch up from. A window started as administrator also reads the Security
+log and Sysmon.
+
 ## Nothing runs in the background
 
 That is a design decision, not a missing feature. There are five ways for wymcmd to know what
@@ -173,6 +179,11 @@ rebuilt from what Windows kept, not read back from a recording.
 ## Rules
 
 Rules run in live, trap and watchdog mode only — watching never changes your machine on its own.
+
+Once the shared data folder exists (after `sources enable`, `blackbox on` or `service install`),
+rules live in `%ProgramData%\wymcmd\protected` and saving one asks for administrator rights. The
+watchdog service runs as LocalSystem from its own copy in `%ProgramFiles%\wymcmd`, and it refuses
+a rules file that anyone but an administrator could have changed.
 
 ```console
 wymcmd rules add --image powershell.exe --hidden --unsigned --action killtree --name "hidden unsigned shells"

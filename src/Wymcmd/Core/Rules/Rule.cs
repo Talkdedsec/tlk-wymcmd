@@ -2,7 +2,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Wymcmd.Core.Diagnostics;
+using Wymcmd.Core.Localization;
 using Wymcmd.Core.Model;
+using Wymcmd.Core.Setup;
+using Wymcmd.Core.Store;
 
 namespace Wymcmd.Core.Rules;
 
@@ -147,9 +150,112 @@ public sealed class RuleSet
         }
     }
 
+    /// <summary>
+    /// What the window and the command line show and edit. Rules from before 0.4.2 sit in the
+    /// open folder until an elevated step moves them; they are still shown, so the next save
+    /// carries them across instead of dropping them.
+    /// </summary>
+    public static RuleSet LoadCurrent()
+    {
+        if (!AppPaths.IsShared) return Load(AppPaths.Rules);
+
+        if (File.Exists(AppPaths.Rules))
+        {
+            // An elevated "watch --enforce" reads this too. A file in the shared folder that
+            // somebody else could have written gets the same treatment as the old open one.
+            return FileTrust.IsAdminOnly(AppPaths.Rules) ? Load(AppPaths.Rules) : Disarm(Load(AppPaths.Rules));
+        }
+
+        return File.Exists(AppPaths.LegacyRules) ? Disarm(Load(AppPaths.LegacyRules)) : new RuleSet();
+    }
+
+    /// <summary>
+    /// The old rules file sat where any user could write it, so nobody can say who wrote what is
+    /// in it. Its rules are kept, but every one that does something to a process - or shields a
+    /// process from the others - is switched off until an administrator turns it on again.
+    /// </summary>
+    internal static RuleSet Disarm(RuleSet legacy)
+    {
+        foreach (var rule in legacy.Rules.Where(rule => rule.Action is not (RuleAction.Log or RuleAction.Notify)))
+        {
+            if (rule.Enabled) rule.Note ??= "from before 0.4.2 - switched off until enabled again";
+            rule.Enabled = false;
+        }
+
+        return legacy;
+    }
+
+    /// <summary>Moves the old rules into the protected folder, disarmed. Elevated callers only.</summary>
+    internal static void CarryOverLegacy()
+    {
+        if (!AppPaths.IsShared || !File.Exists(AppPaths.LegacyRules)) return;
+
+        if (!File.Exists(AppPaths.Rules))
+        {
+            LoadCurrent().Save(AppPaths.Rules);
+            SharedRoot.Seal(AppPaths.Rules);
+            Log.Warn("rules from before 0.4.2 were carried over; those that act on a process are switched off until enabled again");
+        }
+
+        File.Delete(AppPaths.LegacyRules);
+    }
+
+    /// <summary>
+    /// What the service enforces. A rules file that a non-administrator can change is ignored:
+    /// the service runs as LocalSystem, and whoever writes its rules decides what it kills.
+    /// </summary>
+    public static RuleSet LoadTrusted(string path)
+    {
+        if (!File.Exists(path)) return new RuleSet();
+        if (FileTrust.IsAdminOnly(path)) return Load(path);
+
+        Log.Error($"{path} can be changed by non-administrators; its rules are ignored");
+        return new RuleSet();
+    }
+
+    /// <summary>Unlike Load, a file that does not parse is an error here - it is about to replace the real one.</summary>
+    public static RuleSet Parse(string json)
+        => JsonSerializer.Deserialize<RuleSet>(json, Format) ?? throw new JsonException("empty rule set");
+
     public void Save(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(this, Format));
+    }
+
+    /// <summary>
+    /// Saves to where rules live on this machine. In the shared folder that takes an
+    /// administrator, so an unelevated caller hands the new set to an elevated copy of itself.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">The elevation prompt was declined.</exception>
+    public void SaveCurrent()
+    {
+        if (!AppPaths.IsShared)
+        {
+            Save(AppPaths.Rules);
+            return;
+        }
+
+        if (Elevation.IsElevated)
+        {
+            if (!SharedRoot.Ensure()) throw new IOException("the shared data folder could not be prepared");
+            Save(AppPaths.Rules);
+            SharedRoot.Seal(AppPaths.Rules);
+            return;
+        }
+
+        var handover = Path.Combine(Path.GetTempPath(), $"wymcmd-rules-{Guid.NewGuid():n}.json");
+        try
+        {
+            File.WriteAllText(handover, JsonSerializer.Serialize(this, Format));
+
+            var code = Elevation.Relaunch("rules", "apply", handover, "--lang", Loc.Language)
+                       ?? throw new UnauthorizedAccessException(Loc.T("cli.error.needs_admin"));
+            if (code != 0) throw new IOException($"the elevated save failed with exit code {code}");
+        }
+        finally
+        {
+            try { File.Delete(handover); } catch (IOException) { /* temp file */ }
+        }
     }
 }

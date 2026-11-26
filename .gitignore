@@ -12,8 +12,3 @@ package/
 *.db
 *.db-wal
 *.db-shm
-dist/
-shim-out/
-launcher/
-package/
-DEVAM.md

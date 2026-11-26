@@ -22,7 +22,15 @@ public sealed class EtwCollector : ICollector
     private int _restarts;
     private int _seen;
 
-    public EtwCollector(string? sessionName = null) => _sessionName = sessionName ?? AppPaths.LiveSessionName;
+    /// <summary>
+    /// Every process gets a session of its own. They used to share one name, and starting meant
+    /// stopping whoever held it: the service and an elevated "wymcmd watch" took the session from
+    /// each other in turns, each blind while the other had it.
+    /// </summary>
+    public EtwCollector(string? sessionName = null)
+        => _sessionName = sessionName ?? SessionNameFor(Environment.ProcessId);
+
+    internal static string SessionNameFor(int pid) => $"{AppPaths.LiveSessionName}-{pid}";
 
     public EvidenceSource Source => EvidenceSource.Etw;
     public bool Lossless => true;
@@ -36,7 +44,7 @@ public sealed class EtwCollector : ICollector
         if (_running) return;
         if (!Available) throw new UnauthorizedAccessException("ETW capture needs administrator rights.");
 
-        DropStaleSession(_sessionName);
+        DropStaleSessions();
 
         _session = new TraceEventSession(_sessionName)
         {
@@ -116,6 +124,52 @@ public sealed class EtwCollector : ICollector
     /// <summary>Classic kernel events carry no start key, so pid plus start time stands in for one.</summary>
     private static ulong StartKey(int pid, DateTime startTime)
         => (uint)pid | ((ulong)startTime.Ticks << 32);
+
+    /// <summary>
+    /// A session outlives a process that was killed instead of closed, and Windows only allows a
+    /// handful of kernel sessions at once. Clear the ones nobody is reading any more.
+    /// </summary>
+    private void DropStaleSessions()
+    {
+        IEnumerable<string> active;
+        try { active = TraceEventSession.GetActiveSessionNames(); }
+        catch (Exception ex)
+        {
+            Log.Warn("could not list trace sessions: " + ex.Message);
+            return;
+        }
+
+        foreach (var name in Stale(active, _sessionName, IsRunningWymcmd))
+            DropStaleSession(name);
+    }
+
+    /// <summary>
+    /// Ours to stop: the session this process is about to open, the shared name versions before
+    /// 0.4.2 used, and any per-process session whose process is gone.
+    /// </summary>
+    internal static IEnumerable<string> Stale(IEnumerable<string> active, string own, Func<int, bool> isRunningWymcmd)
+    {
+        var prefix = AppPaths.LiveSessionName + "-";
+
+        return active.Where(name =>
+            name.Equals(own, StringComparison.OrdinalIgnoreCase) ||
+            name.Equals(AppPaths.LiveSessionName, StringComparison.OrdinalIgnoreCase) ||
+            (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
+             (!int.TryParse(name[prefix.Length..], out var pid) || !isRunningWymcmd(pid))));
+    }
+
+    private static bool IsRunningWymcmd(int pid)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(pid);
+            return process.ProcessName.Equals("wymcmd", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
 
     public static void DropStaleSession(string name)
     {

@@ -64,6 +64,11 @@ Pencere aynı motorun başka bir yüzü: **Zaman tüneli** bir anı tüm kaynakl
 **İstatistik** geçmişteki desenleri okur, **Kaynaklar** Windows kaydını açıp kapatır, **Dışa
 aktar** ise baktığın listeyi CSV, JSON satırları ya da rapor olarak yazar.
 
+Pencere açılırken önce arayı kapatır: wymcmd çalışmıyorken kara kutunun kaydettikleri son üç gün
+için listeye alınır; makinenin açıldığı andan, kimse oturum açmadan önceki açılışlar dahil. Bunun
+için bir kez yönetici olarak `wymcmd blackbox on` gerekir; o olmadan kapatılacak bir kayıt yoktur.
+Yönetici olarak açılan pencere Güvenlik günlüğünü ve Sysmon'u da okur.
+
 ## Arka planda hiçbir şey çalışmıyor
 
 Bu eksik bir özellik değil, bilinçli bir karar. wymcmd'nin olan biteni öğrenmek için beş yolu
@@ -173,6 +178,11 @@ değil Windows'un tuttuklarından yeniden kurulmuş olarak işaretlenir.
 ## Kurallar
 
 Kurallar yalnızca canlı, tuzak ve nöbet modunda çalışır — izlemek tek başına makineni değiştirmez.
+
+Paylaşılan veri klasörü oluştuktan sonra (`sources enable`, `blackbox on` ya da `service install`
+ardından) kurallar `%ProgramData%\wymcmd\protected` altında durur ve kural kaydetmek yönetici
+ister. Nöbet servisi LocalSystem olarak `%ProgramFiles%\wymcmd` altındaki kendi kopyasından
+çalışır ve yöneticiden başkasının değiştirebildiği bir kural dosyasını reddeder.
 
 ```console
 wymcmd rules add --image powershell.exe --hidden --unsigned --action killtree --name "gizli imzasız kabuk"

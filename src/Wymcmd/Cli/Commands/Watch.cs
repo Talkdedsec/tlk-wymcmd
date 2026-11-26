@@ -20,7 +20,8 @@ public static class Watch
         await using var store = new EventStore();
         var tree = new ProcessTree();
         var attribution = new AttributionEngine(new AutostartIndex());
-        var rules = RuleSet.Load(AppPaths.Rules);
+        var rules = RuleSet.LoadCurrent();
+        using var ruleWatcher = new RuleWatcher(rules, AppPaths.Rules, RuleSet.LoadCurrent);
 
         await using var engine = new CaptureEngine(store, tree, attribution, rules) { EnforceRules = enforce };
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Wymcmd.Core.Localization;
 using Wymcmd.Core.Model;
 using Wymcmd.Core.Rules;
+using Wymcmd.Core.Setup;
 using Wymcmd.Core.Store;
 
 namespace Wymcmd.Cli.Commands;
@@ -15,20 +16,44 @@ public static class Rules
             "--action", "--name", "--priority", "--risk", "--last")
             .FirstOrDefault()?.ToLowerInvariant() ?? "list";
 
-        return action switch
+        try
         {
-            "add" => Add(options),
-            "rm" or "remove" or "delete" => Remove(options),
-            "enable" => Toggle(options, true),
-            "disable" => Toggle(options, false),
-            "test" => Test(options),
-            _ => Show(options)
-        };
+            return action switch
+            {
+                "add" => Add(options),
+                "rm" or "remove" or "delete" => Remove(options),
+                "enable" => Toggle(options, true),
+                "disable" => Toggle(options, false),
+                "test" => Test(options),
+                "apply" => Apply(options),
+                _ => Show(options)
+            };
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Rules in the shared folder take an administrator, and the prompt was declined.
+            ConsoleHost.Bad(Loc.T("cli.error.needs_admin"));
+            return CommandRouter.ExitNeedsAdmin;
+        }
+    }
+
+    /// <summary>
+    /// The elevated half of a save: an unelevated wymcmd writes the new set to a temporary file
+    /// and starts this to put it in the protected folder. Not listed in the help.
+    /// </summary>
+    private static int Apply(CliOptions options)
+    {
+        var file = options.Positional().Skip(1).FirstOrDefault();
+        if (file is null || !File.Exists(file)) return CommandRouter.ExitError;
+        if (!Elevation.IsElevated) throw new UnauthorizedAccessException();
+
+        RuleSet.Parse(File.ReadAllText(file)).SaveCurrent();
+        return CommandRouter.ExitOk;
     }
 
     private static int Show(CliOptions options)
     {
-        var set = RuleSet.Load(AppPaths.Rules);
+        var set = RuleSet.LoadCurrent();
 
         if (options.Json)
         {
@@ -54,7 +79,7 @@ public static class Rules
 
     private static int Add(CliOptions options)
     {
-        var set = RuleSet.Load(AppPaths.Rules);
+        var set = RuleSet.LoadCurrent();
 
         var actionText = options.Value("--action") ?? "log";
         if (!Enum.TryParse<RuleAction>(actionText, true, out var parsed) || !Enum.IsDefined(parsed) || int.TryParse(actionText, out _))
@@ -95,7 +120,7 @@ public static class Rules
         }
 
         set.Rules.Add(rule);
-        set.Save(AppPaths.Rules);
+        set.SaveCurrent();
 
         ConsoleHost.Good(Loc.T("rules.added", rule.Id, rule.Action.ToString().ToLowerInvariant()));
         ConsoleHost.Dim("      " + Describe(rule));
@@ -114,9 +139,9 @@ public static class Rules
         var id = options.Positional().Skip(1).FirstOrDefault();
         if (id is null) return CommandRouter.ExitError;
 
-        var set = RuleSet.Load(AppPaths.Rules);
+        var set = RuleSet.LoadCurrent();
         var removed = set.Rules.RemoveAll(rule => rule.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-        set.Save(AppPaths.Rules);
+        set.SaveCurrent();
 
         if (removed == 0)
         {
@@ -131,7 +156,7 @@ public static class Rules
     private static int Toggle(CliOptions options, bool enabled)
     {
         var id = options.Positional().Skip(1).FirstOrDefault();
-        var set = RuleSet.Load(AppPaths.Rules);
+        var set = RuleSet.LoadCurrent();
         var rule = set.Rules.FirstOrDefault(r => r.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
         if (rule is null)
@@ -141,14 +166,14 @@ public static class Rules
         }
 
         rule.Enabled = enabled;
-        set.Save(AppPaths.Rules);
+        set.SaveCurrent();
         ConsoleHost.Good(Loc.T(enabled ? "rules.enabled" : "rules.disabled", rule.Id));
         return CommandRouter.ExitOk;
     }
 
     private static int Test(CliOptions options)
     {
-        var set = RuleSet.Load(AppPaths.Rules);
+        var set = RuleSet.LoadCurrent();
         var window = Commands.List.ParseSpan(options.Value("--last") ?? "24h");
 
         if (set.Rules.Count == 0)

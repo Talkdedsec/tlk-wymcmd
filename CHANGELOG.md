@@ -1,5 +1,56 @@
 # Changelog
 
+## Unreleased
+
+Security fixes for the optional watchdog service. If you use it, run `wymcmd service install`
+once more after updating: that moves the service to its new place.
+
+- **Any user could tell the service what to kill.** The shared data folder is open to every user
+  so the window can write the database, and `rules.json` sat in it. The service runs as
+  LocalSystem and enforced whatever that file said. Rules and the setup journal now live in
+  `ProgramData\wymcmd\protected`, which only administrators can write, and the service refuses a
+  rules file that anybody else could have changed. Saving a rule on a machine with the shared
+  folder asks for elevation. Existing rules are carried across by the next elevated step or
+  service start. Nobody can say who wrote the old file, so carried-over rules that kill, suspend,
+  hide or allow arrive switched off: turn them back on with `wymcmd rules enable <id>`. The old
+  setup journal is not carried over for the same reason: if an earlier version turned auditing on
+  for you, `uninstall` no longer knows that and leaves it on - run `wymcmd sources enable` again
+  first if you want it tracked.
+- **The service ran from a folder its user could write.** `service install` registered whatever
+  copy of `wymcmd.exe` it was started from - normally the per-user install folder - to run as
+  LocalSystem. It now copies the program to `Program Files\wymcmd` and registers that copy.
+- The shared folder itself can no longer be renamed or deleted by a normal user.
+- **Uninstall switched off auditing it had not switched on.** Process-creation auditing that was
+  already on before `sources enable` was recorded as ours and turned off again by `uninstall`,
+  failure auditing included. The earlier state is read first, and only success auditing that
+  wymcmd turned on is turned off.
+- **Watching, stopping and watching again captured nothing.** The window said it was watching.
+- **A program that stopped reading the service's live feed stopped the service.** Any logged-in
+  user could connect to the feed; one that never read held capture and rule enforcement in a
+  write. A client now gets a quarter of a second and is dropped.
+- **The service and an elevated `watch` or `trap` took the trace session from each other.** They
+  shared one session name and each stopped the other's on start. Every process has its own now.
+- **A rule added while the service was running was not enforced until it restarted.** The
+  service and `watch` pick up rule changes within a few seconds.
+- A kill names the process it means by start time as well as pid, so a pid that has already been
+  handed to another process is left alone.
+- Times from live capture are corrected for the trace clock drifting away from the system clock
+  over a long run, so a service that has been up for weeks still recognises the process it means.
+- `trap --path` on its own was narrowed to `cmd.exe`.
+- The process tree kept every process it had ever seen; a service running for weeks grew without
+  limit. Records of exited processes are dropped after a day.
+- CSV export: a cell that starts with `=`, `+`, `-` or `@` is written as text, so a task name or
+  command line cannot run as a spreadsheet formula.
+- **The black box recorded nothing readable until the next reboot.** The session started by
+  `blackbox on` had no flush timer, so its trace file stayed empty until a buffer filled. It is
+  written every five seconds now, like the one Windows starts at boot.
+- **A console with an unknown parent was credited to a scheduled task that merely runs `cmd.exe`.**
+  Sharing a file name with a registered entry is no longer enough; the arguments have to agree.
+- **The window catches up when it opens.** What the black box recorded while wymcmd was not
+  running is brought into the list for the last three days, including launches from before anyone
+  logged on. It needs `wymcmd blackbox on` once; a window started as administrator also reads the
+  Security log and Sysmon.
+
 ## 0.4.1
 
 - **Launches were credited to "Windows Desktop Update".** Windows ships an Active Setup entry
