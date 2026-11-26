@@ -26,8 +26,17 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     private CaptureEngine? _engine;
     private PipeClient? _feed;
 
-    public MainViewModel()
+    private readonly Func<EventStore, DateTime, DateTime, int> _catchUp;
+
+    public MainViewModel() : this((store, from, to) => new Core.Forensic.ForensicHarvester(store).CatchUp(from, to))
     {
+    }
+
+    /// <param name="catchUp">What reads the machine's own records into the store - replaced in tests, which have no black box to read.</param>
+    internal MainViewModel(Func<EventStore, DateTime, DateTime, int> catchUp)
+    {
+        _catchUp = catchUp;
+
         _flush = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromMilliseconds(120)
@@ -63,7 +72,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
             var now = DateTime.Now;
             var from = _caughtUpTo is { } last ? last.AddMinutes(-1) : now - HistoryWindow;
 
-            var added = await Task.Run(() => new Core.Forensic.ForensicHarvester(_store).CatchUp(from, now)).ConfigureAwait(false);
+            var added = await Task.Run(() => _catchUp(_store, from, now)).ConfigureAwait(false);
             _caughtUpTo = now;
             if (added == 0) return;
 
