@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.2
 
 Security fixes for the optional watchdog service. If you use it, run `wymcmd service install`
 once more after updating: that moves the service to its new place.
